@@ -12,7 +12,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc && chmod 755 build/index.js",
-    "debug": "node build/index.js"
+    "debug": "node build/index.js",
+    "watch": "node src/watch-modules.js",
+    "watch:frontend": "node src/watch-modules.js /home/git/frontend",
+    "test:watch": "./test-watch.sh"
   },
   "keywords": [],
   "author": "",
@@ -22,7 +25,10 @@
     "eventsource-parser": "^3.0.0",
     "axios": "^1.11.0",
     "node-fetch": "^3.3.2",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "chokidar": "^4.0.3",
+    "js-yaml": "^4.1.0",
+    "glob": "^11.0.0"
   },
   "devDependencies": {
     "@types/node": "*",
