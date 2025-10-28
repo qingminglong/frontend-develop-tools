@@ -2,115 +2,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 // 导入 StdioServerTransport 类，用于处理服务器的输入输出通信
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import axios from 'axios';
 import * as fs from 'fs';
-import { watchModulesWithPath } from './watch-modules.js';
-/**
- * 解析环境变量为字符串数组，支持多种格式
- * @param envValue 环境变量值
- * @returns 解析后的字符串数组
- */
-function parseEnvArray(envValue) {
-    // 如果已经是数组，直接返回
-    if (Array.isArray(envValue)) {
-        return envValue.filter((item) => typeof item === 'string' && item.trim() !== '');
-    }
-    // 如果不是字符串，返回空数组
-    if (typeof envValue !== 'string') {
-        return [];
-    }
-    const trimmedValue = envValue.trim();
-    if (!trimmedValue) {
-        return [];
-    }
-    // 尝试作为 JSON 数组解析
-    if (trimmedValue.startsWith('[') && trimmedValue.endsWith(']')) {
-        try {
-            const parsed = JSON.parse(trimmedValue);
-            if (Array.isArray(parsed)) {
-                return parsed.filter((item) => typeof item === 'string' && item.trim() !== '');
-            }
-        }
-        catch (error) {
-            console.error(`JSON 数组解析失败: ${error}`);
-        }
-    }
-    // 尝试作为逗号分隔的字符串解析
-    if (trimmedValue.includes(',')) {
-        return trimmedValue
-            .split(',')
-            .map((item) => item.trim())
-            .filter((item) => item !== '');
-    }
-    // 单个路径
-    return [trimmedValue];
-}
-/**
- * 从命令行参数或配置文件读取配置
- */
-function getConfiguration() {
-    const projectPatchsEnv = process.env.PROJECT_PATCHS;
-    const modulePathsEnv = process.env.MODULE_PATHS;
-    const config = {
-        modulePaths: [],
-        projectPaths: []
-    };
-    if (projectPatchsEnv || modulePathsEnv) {
-        try {
-            // 解析 MODULE_PATHS 环境变量
-            if (modulePathsEnv) {
-                try {
-                    config.modulePaths = parseEnvArray(modulePathsEnv);
-                    if (config.modulePaths.length === 0) {
-                        console.warn('MODULE_PATHS 解析结果为空');
-                    }
-                }
-                catch (error) {
-                    console.error(`MODULE_PATHS 解析失败: ${error}`);
-                    config.modulePaths = [];
-                }
-            }
-            // 解析 PROJECT_PATCHS 环境变量
-            if (projectPatchsEnv) {
-                try {
-                    config.projectPaths = parseEnvArray(projectPatchsEnv);
-                    if (config.projectPaths.length === 0) {
-                        console.warn('PROJECT_PATCHS 解析结果为空');
-                    }
-                }
-                catch (error) {
-                    console.error(`PROJECT_PATCHS 解析失败: ${error}`);
-                    config.projectPaths = [];
-                }
-            }
-            // 如果至少有一个配置有效，则返回配置数组
-            if (config.modulePaths.length > 0 || config.projectPaths.length > 0) {
-                return config;
-            }
-        }
-        catch (error) {
-            console.error(`环境变量配置处理失败: ${error}`);
-        }
-    }
-    // 尝试从旧格式的 PROJECT_CONFIG 环境变量读取（向后兼容）
-    const configEnv = process.env.PROJECT_CONFIG;
-    if (configEnv) {
-        try {
-            return JSON.parse(configEnv);
-        }
-        catch (error) {
-            console.error(`PROJECT_CONFIG 环境变量解析失败: ${error}`);
-        }
-    }
-    // 返回默认配置
-    console.warn('未找到有效的项目配置，返回空配置');
-    return config;
-}
-/**
- * 全局配置存储
- */
-const configuration = getConfiguration();
-console.log('加载的项目配置:', JSON.stringify(configuration, null, 2));
+import { configuration } from './get-configuration.js';
+import { startWatchingModules } from './start-watch.js';
+import { stopWatchingModules } from './stop-watch.js';
 /**
  * 全局监控器存储
  */
@@ -121,6 +16,11 @@ const watchers = new Map();
 const server = new McpServer({
     name: 'frontend-develop-tools',
     version: '1.0.0'
+});
+startWatchingModules(watchers);
+process.on('SIGINT', () => {
+    stopWatchingModules(watchers);
+    process.exit(0);
 });
 // 注册工具：获取项目配置信息
 server.registerTool('get-configuration', {
@@ -199,45 +99,7 @@ server.registerTool('start-watch-modules', {
     inputSchema: {}
 }, async () => {
     try {
-        if (configuration.modulePaths.length === 0) {
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: '没有配置需要监控的模块路径'
-                    }
-                ],
-                isError: true
-            };
-        }
-        const results = [];
-        // 遍历所有模块路径并启动监控
-        for (const modulePath of configuration.modulePaths) {
-            try {
-                // 如果已经在监控，跳过
-                if (watchers.has(modulePath)) {
-                    results.push({
-                        path: modulePath,
-                        status: 'already_watching'
-                    });
-                    continue;
-                }
-                // 启动监控
-                const watcher = watchModulesWithPath(modulePath);
-                watchers.set(modulePath, watcher);
-                results.push({
-                    path: modulePath,
-                    status: 'started'
-                });
-            }
-            catch (error) {
-                results.push({
-                    path: modulePath,
-                    status: 'failed',
-                    error: error instanceof Error ? error.message : 'Unknown error'
-                });
-            }
-        }
+        const results = startWatchingModules(watchers);
         return {
             content: [
                 {
@@ -271,14 +133,7 @@ server.registerTool('stop-watch-modules', {
     inputSchema: {}
 }, async () => {
     try {
-        const stoppedPaths = [];
-        // 停止所有监控器
-        for (const [modulePath, watcher] of watchers.entries()) {
-            await watcher.close();
-            stoppedPaths.push(modulePath);
-        }
-        // 清空监控器映射
-        watchers.clear();
+        const stoppedPaths = await stopWatchingModules(watchers);
         return {
             content: [
                 {
@@ -323,39 +178,6 @@ server.registerTool('get-watch-status', {
                         watchingPaths: watchingPaths,
                         notWatchingPaths: notWatchingPaths
                     }, null, 2)
-                }
-            ]
-        };
-    }
-    catch (e) {
-        return {
-            content: [
-                {
-                    type: 'text',
-                    text: `Error: ${e instanceof Error ? e.message : 'Unknown error'}`
-                }
-            ],
-            isError: true
-        };
-    }
-});
-server.registerTool('ui-config', {
-    title: 'ui-config',
-    description: '获取阿波罗配置或ui配置',
-    inputSchema: {}
-}, async () => {
-    try {
-        // 发送请求并获取响应
-        const requestUrl = `https://lcap.test.zte.com.cn/zte-paas-lcap-demobff/uiconfig`;
-        // 发送请求并获取响应
-        const response = (await axios.get(requestUrl));
-        console.log('requestUrl', requestUrl);
-        // 返回响应结果
-        return {
-            content: [
-                {
-                    type: 'text',
-                    text: JSON.stringify(response.data)
                 }
             ]
         };

@@ -151,7 +151,7 @@ function formatChangeInfo(event, filePath, packages, rootDir) {
         fullPath: relativePath
     };
 }
-// 输出彩色日志
+// 输出彩色日志（使用 stderr 避免干扰 MCP 通信）
 function logChange(info) {
     if (!info)
         return;
@@ -172,7 +172,7 @@ function logChange(info) {
         删除: colors.red
     };
     const eventColorValue = eventColor[info.event] || colors.cyan;
-    console.log(`${colors.dim}[${info.timestamp}]${colors.reset} ` +
+    console.error(`${colors.dim}[${info.timestamp}]${colors.reset} ` +
         `${eventColorValue}${info.event}${colors.reset} ` +
         `${colors.bright}${colors.magenta}${info.module}${colors.reset} ` +
         `${colors.cyan}${info.file}${colors.reset}`);
@@ -183,7 +183,8 @@ function logChange(info) {
  * @returns {FSWatcher} 返回监控器实例，用于后续停止监控
  */
 export function watchModulesWithPath(projectPath) {
-    console.log(`📂 监控项目: ${projectPath}\n`);
+    // 使用 console.error 输出到 stderr，避免干扰 MCP 的 stdout 通信
+    console.error(`📂 监控项目: ${projectPath}\n`);
     // 验证路径
     if (!fs.existsSync(projectPath)) {
         throw new Error(`项目路径不存在: ${projectPath}`);
@@ -196,16 +197,16 @@ export function watchModulesWithPath(projectPath) {
     const config = readWorkspaceConfig(projectPath);
     const packages = getWorkspacePackages(config.packages, projectPath);
     if (packages.length === 0) {
-        console.warn('⚠️  警告: 没有找到包含 src 目录的模块');
-        console.warn('   请检查 pnpm-workspace.yaml 配置和包目录结构');
+        console.error('⚠️  警告: 没有找到包含 src 目录的模块');
+        console.error('   请检查 pnpm-workspace.yaml 配置和包目录结构');
     }
-    console.log(`📦 找到 ${packages.length} 个包含 src 目录的模块:\n`);
+    console.error(`📦 找到 ${packages.length} 个包含 src 目录的模块:\n`);
     packages.forEach((pkg) => {
-        console.log(`   - ${pkg.name}`);
+        console.error(`   - ${pkg.name}`);
     });
-    console.log('\n👀 开始监控文件变化...\n');
-    console.log('━'.repeat(80));
-    console.log('');
+    console.error('\n👀 开始监控文件变化...\n');
+    console.error('━'.repeat(80));
+    console.error('');
     // 创建监控器
     const watchPaths = packages.map((pkg) => pkg.srcPath);
     const watcher = chokidar.watch(watchPaths, {
@@ -245,7 +246,7 @@ export function watchModulesWithPath(projectPath) {
  * 主函数（命令行模式）
  */
 export default function watchModules() {
-    console.log('🚀 正在启动 pnpm workspace 模块变化监控...\n');
+    console.error('🚀 正在启动 pnpm workspace 模块变化监控...\n');
     // 解析并验证项目路径
     const projectPath = parseProjectPath();
     validateProjectPath(projectPath);
@@ -253,7 +254,7 @@ export default function watchModules() {
     const watcher = watchModulesWithPath(projectPath);
     // 优雅退出
     process.on('SIGINT', () => {
-        console.log('\n\n👋 停止监控...');
+        console.error('\n\n👋 停止监控...');
         watcher.close();
         process.exit(0);
     });
