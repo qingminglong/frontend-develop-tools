@@ -27,12 +27,15 @@ const server = new McpServer({
   version: '1.0.0'
 })
 
-startWatchingModules(watchers)
-
-process.on('SIGINT', () => {
-  stopWatchingModules(watchers)
-  process.exit(0)
-})
+// 根据 autoWatcher 环境变量决定是否自动启动模块监控
+const autoWatcher = process.env.autoWatcher
+if (autoWatcher !== 'false') {
+  startWatchingModules(watchers)
+  process.on('SIGINT', () => {
+    stopWatchingModules(watchers)
+    process.exit(0)
+  })
+}
 
 // 注册工具：获取项目配置信息
 server.registerTool(
@@ -114,91 +117,92 @@ server.registerTool(
     }
   }
 )
+if (autoWatcher === 'false') {
+  // 注册工具：启动模块监控
+  server.registerTool(
+    'start-watch-modules',
+    {
+      title: 'start-watch-modules',
+      description: '遍历配置的模块路径并启动文件变化监控',
+      inputSchema: {}
+    },
+    async () => {
+      try {
+        const results = startWatchingModules(watchers)
 
-// 注册工具：启动模块监控
-server.registerTool(
-  'start-watch-modules',
-  {
-    title: 'start-watch-modules',
-    description: '遍历配置的模块路径并启动文件变化监控',
-    inputSchema: {}
-  },
-  async () => {
-    try {
-      const results = startWatchingModules(watchers)
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(
-              {
-                message: '模块监控启动完成',
-                totalPaths: configuration.modulePaths.length,
-                activeWatchers: watchers.size,
-                results: results
-              },
-              null,
-              2
-            )
-          }
-        ]
-      }
-    } catch (e) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error: ${e instanceof Error ? e.message : 'Unknown error'}`
-          }
-        ],
-        isError: true
-      }
-    }
-  }
-)
-
-// 注册工具：停止模块监控
-server.registerTool(
-  'stop-watch-modules',
-  {
-    title: 'stop-watch-modules',
-    description: '停止所有正在运行的模块监控',
-    inputSchema: {}
-  },
-  async () => {
-    try {
-      const stoppedPaths = await stopWatchingModules(watchers)
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(
-              {
-                message: '所有模块监控已停止',
-                stoppedCount: stoppedPaths.length,
-                stoppedPaths: stoppedPaths
-              },
-              null,
-              2
-            )
-          }
-        ]
-      }
-    } catch (e) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error: ${e instanceof Error ? e.message : 'Unknown error'}`
-          }
-        ],
-        isError: true
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  message: '模块监控启动完成',
+                  totalPaths: configuration.modulePaths.length,
+                  activeWatchers: watchers.size,
+                  results: results
+                },
+                null,
+                2
+              )
+            }
+          ]
+        }
+      } catch (e) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error: ${e instanceof Error ? e.message : 'Unknown error'}`
+            }
+          ],
+          isError: true
+        }
       }
     }
-  }
-)
+  )
+
+  // 注册工具：停止模块监控
+  server.registerTool(
+    'stop-watch-modules',
+    {
+      title: 'stop-watch-modules',
+      description: '停止所有正在运行的模块监控',
+      inputSchema: {}
+    },
+    async () => {
+      try {
+        const stoppedPaths = await stopWatchingModules(watchers)
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  message: '所有模块监控已停止',
+                  stoppedCount: stoppedPaths.length,
+                  stoppedPaths: stoppedPaths
+                },
+                null,
+                2
+              )
+            }
+          ]
+        }
+      } catch (e) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error: ${e instanceof Error ? e.message : 'Unknown error'}`
+            }
+          ],
+          isError: true
+        }
+      }
+    }
+  )
+}
 
 // 注册工具：获取监控状态
 server.registerTool(
