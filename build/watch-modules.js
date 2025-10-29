@@ -15,6 +15,7 @@ import fs from 'fs';
 import { glob } from 'glob';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { detectAndCacheChangedModules } from './detect-changed-modules.js';
 // 获取当前文件的目录路径（ES 模块中的 __dirname 替代）
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -59,12 +60,12 @@ function parseProjectPath() {
 /**
  * 验证项目路径是否有效
  */
-function validateProjectPath(projectPath) {
-    if (!fs.existsSync(projectPath)) {
-        console.error(`❌ 错误: 项目路径不存在: ${projectPath}`);
+function validateProjectPath(modulePath) {
+    if (!fs.existsSync(modulePath)) {
+        console.error(`❌ 错误: 项目路径不存在: ${modulePath}`);
         process.exit(1);
     }
-    const workspaceFile = path.join(projectPath, 'pnpm-workspace.yaml');
+    const workspaceFile = path.join(modulePath, 'pnpm-workspace.yaml');
     if (!fs.existsSync(workspaceFile)) {
         console.error(`❌ 错误: 在项目路径中找不到 pnpm-workspace.yaml 文件`);
         console.error(`   查找路径: ${workspaceFile}`);
@@ -75,10 +76,10 @@ function validateProjectPath(projectPath) {
 }
 /**
  * 读取pnpm-workspace.yaml配置
- * @param {string} projectPath - 项目根目录路径
+ * @param {string} modulePath - 项目根目录路径
  */
-function readWorkspaceConfig(projectPath) {
-    const workspaceFile = path.join(projectPath, 'pnpm-workspace.yaml');
+function readWorkspaceConfig(modulePath) {
+    const workspaceFile = path.join(modulePath, 'pnpm-workspace.yaml');
     const content = fs.readFileSync(workspaceFile, 'utf8');
     return yaml.load(content);
 }
@@ -179,23 +180,23 @@ function logChange(info) {
 }
 /**
  * 监控指定路径的模块变化
- * @param {string} projectPath - 项目根目录路径
+ * @param {string} modulePath - 项目根目录路径
  * @returns {FSWatcher} 返回监控器实例，用于后续停止监控
  */
-export function watchModulesWithPath(projectPath) {
+export function watchModulesWithPath(modulePath) {
     // 使用 console.error 输出到 stderr，避免干扰 MCP 的 stdout 通信
-    console.error(`📂 监控项目: ${projectPath}\n`);
+    console.error(`📂 监控项目: ${modulePath}\n`);
     // 验证路径
-    if (!fs.existsSync(projectPath)) {
-        throw new Error(`项目路径不存在: ${projectPath}`);
+    if (!fs.existsSync(modulePath)) {
+        throw new Error(`项目路径不存在: ${modulePath}`);
     }
-    const workspaceFile = path.join(projectPath, 'pnpm-workspace.yaml');
+    const workspaceFile = path.join(modulePath, 'pnpm-workspace.yaml');
     if (!fs.existsSync(workspaceFile)) {
         throw new Error(`在项目路径中找不到 pnpm-workspace.yaml 文件: ${workspaceFile}`);
     }
     // 读取workspace配置
-    const config = readWorkspaceConfig(projectPath);
-    const packages = getWorkspacePackages(config.packages, projectPath);
+    const config = readWorkspaceConfig(modulePath);
+    const packages = getWorkspacePackages(config.packages, modulePath);
     if (packages.length === 0) {
         console.error('⚠️  警告: 没有找到包含 src 目录的模块');
         console.error('   请检查 pnpm-workspace.yaml 配置和包目录结构');
@@ -226,16 +227,22 @@ export function watchModulesWithPath(projectPath) {
     // 监听变化事件
     watcher
         .on('add', (filePath) => {
-        const info = formatChangeInfo('add', filePath, packages, projectPath);
+        const info = formatChangeInfo('add', filePath, packages, modulePath);
         logChange(info);
+        // 调用公用函数检测并缓存变更的模块
+        detectAndCacheChangedModules(modulePath);
     })
         .on('change', (filePath) => {
-        const info = formatChangeInfo('change', filePath, packages, projectPath);
+        const info = formatChangeInfo('change', filePath, packages, modulePath);
         logChange(info);
+        // 调用公用函数检测并缓存变更的模块
+        detectAndCacheChangedModules(modulePath);
     })
         .on('unlink', (filePath) => {
-        const info = formatChangeInfo('unlink', filePath, packages, projectPath);
+        const info = formatChangeInfo('unlink', filePath, packages, modulePath);
         logChange(info);
+        // 调用公用函数检测并缓存变更的模块
+        detectAndCacheChangedModules(modulePath);
     })
         .on('error', (error) => {
         console.error(`❌ 监控错误: ${error}`);
@@ -248,10 +255,10 @@ export function watchModulesWithPath(projectPath) {
 export default function watchModules() {
     console.error('🚀 正在启动 pnpm workspace 模块变化监控...\n');
     // 解析并验证项目路径
-    const projectPath = parseProjectPath();
-    validateProjectPath(projectPath);
+    const modulePath = parseProjectPath();
+    validateProjectPath(modulePath);
     // 调用路径版本的函数
-    const watcher = watchModulesWithPath(projectPath);
+    const watcher = watchModulesWithPath(modulePath);
     // 优雅退出
     process.on('SIGINT', () => {
         console.error('\n\n👋 停止监控...');
