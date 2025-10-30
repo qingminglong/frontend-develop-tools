@@ -3,8 +3,8 @@ import path from 'path';
 import fs from 'fs';
 import yaml from 'js-yaml';
 import { glob } from 'glob';
-// 缓存模块名称
-export const moduleNames = [];
+// 按项目路径缓存模块信息详情
+export const modulesInfosDetail = {};
 /**
  * 从modulesPath下获取所有工作区包的信息
  * @param modulePath - 项目根目录路径
@@ -96,14 +96,55 @@ function getPackageName(packageJsonPath) {
     }
 }
 /**
+ * 从package.json中读取dependencies和devDependencies
+ * @param packageJsonPath - package.json文件路径
+ * @returns dependencies和devDependencies的所有key（去重）
+ */
+function getPackageDependencies(packageJsonPath) {
+    try {
+        const content = fs.readFileSync(packageJsonPath, 'utf8');
+        const pkg = JSON.parse(content);
+        const dependencies = pkg.dependencies || {};
+        const devDependencies = pkg.devDependencies || {};
+        // 合并并去重
+        const allDependencies = new Set([
+            ...Object.keys(dependencies),
+            ...Object.keys(devDependencies)
+        ]);
+        return Array.from(allDependencies);
+    }
+    catch (error) {
+        return [];
+    }
+}
+/**
+ * 查找哪些模块依赖了指定的模块
+ * @param targetModuleName - 目标模块名称
+ * @param packages - 所有工作区包列表
+ * @returns 依赖目标模块的模块名称数组
+ */
+function findDependentModules(targetModuleName, packages) {
+    const dependentModules = [];
+    packages.forEach((pkg) => {
+        const dependencies = getPackageDependencies(pkg.packageJsonPath);
+        if (dependencies.includes(targetModuleName)) {
+            const pkgName = getPackageName(pkg.packageJsonPath);
+            if (pkgName && pkgName !== targetModuleName) {
+                dependentModules.push(pkgName);
+            }
+        }
+    });
+    return dependentModules;
+}
+/**
  * 分析受影响的模块
  * @param changedFiles - 变更文件列表
  * @param packages - 工作区包列表
  * @param modulePath - 项目根目录路径
- * @returns 受影响的模块名称集合
+ * @returns 受影响的模块信息数组
  */
 function analyzeChangedModules(changedFiles, packages, modulePath) {
-    const affectedModules = new Set();
+    const affectedModulesMap = new Map();
     changedFiles.forEach((file) => {
         const absolutePath = path.join(modulePath, file);
         // 检查文件是否在某个包中
@@ -115,37 +156,84 @@ function analyzeChangedModules(changedFiles, packages, modulePath) {
         if (matchedPackage) {
             // 读取package.json获取name
             const packageName = getPackageName(matchedPackage.packageJsonPath);
-            if (packageName) {
-                affectedModules.add(packageName);
+            if (packageName && !affectedModulesMap.has(packageName)) {
+                // 查找依赖当前模块的其他模块
+                const dependentModules = findDependentModules(packageName, packages);
+                affectedModulesMap.set(packageName, {
+                    moduleName: packageName,
+                    modulePath: matchedPackage.path,
+                    dependenciesModuleNames: dependentModules
+                });
             }
         }
     });
-    return affectedModules;
+    return Array.from(affectedModulesMap.values());
 }
 /**
- * 检测并缓存变更的模块名称
+ * 检测并缓存变更的模块信息
  * @param modulePath - 项目根目录路径
- * @returns 变更的模块名称数组
+ * @returns 变更的模块信息数组
  */
 export function detectAndCacheChangedModules(modulePath) {
-    // 清空旧的缓存
-    moduleNames.length = 0;
     // 获取所有工作区包
     const packages = getWorkspacePackages(modulePath);
     if (packages.length === 0) {
         console.error('未找到任何工作区包');
+        // 更新缓存为空
+        modulesInfosDetail[modulePath] = [];
         return [];
     }
     // 获取git变更文件
     const changedFiles = getChangedFiles(modulePath);
     if (changedFiles.length === 0) {
         console.error('未检测到任何文件变更');
+        // 更新缓存为空
+        modulesInfosDetail[modulePath] = [];
         return [];
     }
     // 分析受影响的模块
     const affectedModules = analyzeChangedModules(changedFiles, packages, modulePath);
-    // 更新缓存
-    moduleNames.push(...Array.from(affectedModules));
-    console.error(`📦 检测到 ${affectedModules.size} 个模块发生变更: ${Array.from(affectedModules).join(', ')}`);
-    return moduleNames;
+    // 更新全局缓存（最新一次检测结果）
+    modulesInfosDetail[modulePath] = [];
+    // 更新按项目路径的缓存（支持多项目）
+    modulesInfosDetail[modulePath].push(...affectedModules);
+    console.error(`📦 检测到 ${affectedModules.length} 个模块发生变更:`);
+    affectedModules.forEach((m) => {
+        console.error(`   - ${m.moduleName} (${m.modulePath})`);
+        if (m.dependenciesModuleNames.length > 0) {
+            console.error(`     依赖此模块的: ${m.dependenciesModuleNames.join(', ')}`);
+        }
+    });
+    return modulesInfosDetail[modulePath];
+}
+/**
+ * 获取指定项目路径的模块信息
+ * @param modulePath - 项目根目录路径
+ * @returns 该项目的模块信息数组，如果不存在则返回空数组
+ */
+export function getModulesInfosByPath(modulePath) {
+    return modulesInfosDetail[modulePath] || [];
+}
+/**
+ * 获取所有项目的模块信息
+ * @returns 所有项目的模块信息详情对象
+ */
+export function getAllModulesInfosDetail() {
+    return modulesInfosDetail;
+}
+/**
+ * 清除指定项目的模块信息缓存
+ * @param modulePath - 项目根目录路径
+ */
+export function clearModulesInfosByPath(modulePath) {
+    delete modulesInfosDetail[modulePath];
+}
+/**
+ * 清除所有项目的模块信息缓存
+ */
+export function clearAllModulesInfos() {
+    Object.keys(modulesInfosDetail).forEach((key) => {
+        modulesInfosDetail[key].length = 0;
+        delete modulesInfosDetail[key];
+    });
 }

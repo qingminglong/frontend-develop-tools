@@ -13,67 +13,7 @@ import path from 'path';
 import yaml from 'js-yaml';
 import fs from 'fs';
 import { glob } from 'glob';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import { detectAndCacheChangedModules } from './detect-changed-modules.js';
-// 获取当前文件的目录路径（ES 模块中的 __dirname 替代）
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-/**
- * 解析命令行参数，获取项目根目录路径
- */
-function parseProjectPath() {
-    const args = process.argv.slice(2);
-    // 显示帮助信息
-    if (args.includes('--help') || args.includes('-h')) {
-        console.log(`
-📚 pnpm workspace 模块变化监控工具
-
-使用方式：
-  node watch-modules.js [项目路径]
-
-参数说明：
-  项目路径        要监控的 pnpm workspace 项目的根目录路径（可选）
-                 如果不提供，默认使用脚本所在目录的上级目录
-
-示例：
-  node watch-modules.js                          # 监控默认项目
-  node watch-modules.js /home/user/my-project    # 监控指定项目
-  node watch-modules.js --help                   # 显示帮助信息
-
-选项：
-  -h, --help     显示帮助信息
-    `);
-        process.exit(0);
-    }
-    // 如果提供了路径参数，使用提供的路径
-    if (args.length > 0 && !args[0].startsWith('-')) {
-        const providedPath = args[0];
-        const absolutePath = path.isAbsolute(providedPath)
-            ? providedPath
-            : path.resolve(process.cwd(), providedPath);
-        return absolutePath;
-    }
-    // 默认使用脚本所在目录的上级目录
-    return path.join(__dirname, '..');
-}
-/**
- * 验证项目路径是否有效
- */
-function validateProjectPath(modulePath) {
-    if (!fs.existsSync(modulePath)) {
-        console.error(`❌ 错误: 项目路径不存在: ${modulePath}`);
-        process.exit(1);
-    }
-    const workspaceFile = path.join(modulePath, 'pnpm-workspace.yaml');
-    if (!fs.existsSync(workspaceFile)) {
-        console.error(`❌ 错误: 在项目路径中找不到 pnpm-workspace.yaml 文件`);
-        console.error(`   查找路径: ${workspaceFile}`);
-        console.error(`   请确保提供的是 pnpm workspace 项目的根目录`);
-        process.exit(1);
-    }
-    return true;
-}
 /**
  * 读取pnpm-workspace.yaml配置
  * @param {string} modulePath - 项目根目录路径
@@ -248,21 +188,4 @@ export function watchModulesWithPath(modulePath) {
         console.error(`❌ 监控错误: ${error}`);
     });
     return watcher;
-}
-/**
- * 主函数（命令行模式）
- */
-export default function watchModules() {
-    console.error('🚀 正在启动 pnpm workspace 模块变化监控...\n');
-    // 解析并验证项目路径
-    const modulePath = parseProjectPath();
-    validateProjectPath(modulePath);
-    // 调用路径版本的函数
-    const watcher = watchModulesWithPath(modulePath);
-    // 优雅退出
-    process.on('SIGINT', () => {
-        console.error('\n\n👋 停止监控...');
-        watcher.close();
-        process.exit(0);
-    });
 }
