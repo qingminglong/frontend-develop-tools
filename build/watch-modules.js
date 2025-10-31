@@ -1,21 +1,17 @@
 #!/usr/bin/env node
-/**
- * pnpm workspace 模块变化监控脚本
- * 监控所有workspace包的src目录变化，实时输出变化的模块信息
- *
- * 使用方式：
- *   node watch-modules.js [项目路径]
- *   node watch-modules.js /path/to/your/project
- *   node watch-modules.js --help
- */
 import chokidar from 'chokidar';
 import path from 'path';
 import yaml from 'js-yaml';
 import fs from 'fs';
 import { glob } from 'glob';
+import { debounce } from 'es-toolkit';
 import { detectAndCacheChangedModules } from './detect-changed-modules.js';
 import { getAllBuildedModules } from './build-modules.js';
 import { FILE_NAMES, ENCODINGS, PACKAGE_FIELDS, FILE_EVENTS, EVENT_NAMES, SPECIAL_CHARS, ANSI_COLORS, CHOKIDAR_CONFIG, DATE_FORMAT_OPTIONS, LOCALES, LOG_MESSAGES, ERROR_MESSAGES } from './consts/index.js';
+// 创建防抖版本的 getAllBuildedModules 函数，间隔 1 秒
+const debouncedGetAllBuildedModules = debounce(() => {
+    getAllBuildedModules();
+}, 2000);
 /**
  * 读取pnpm-workspace.yaml配置
  * @param {string} modulePath - 项目根目录路径
@@ -149,21 +145,24 @@ export function watchModulesWithPath(modulePath) {
         logChange(info);
         // 调用公用函数检测并缓存变更的模块
         detectAndCacheChangedModules(modulePath);
-        getAllBuildedModules();
+        // 使用防抖版本，避免频繁调用
+        debouncedGetAllBuildedModules();
     })
         .on(FILE_EVENTS.CHANGE, (filePath) => {
         const info = formatChangeInfo(FILE_EVENTS.CHANGE, filePath, packages, modulePath);
         logChange(info);
         // 调用公用函数检测并缓存变更的模块
         detectAndCacheChangedModules(modulePath);
-        getAllBuildedModules();
+        // 使用防抖版本，避免频繁调用
+        debouncedGetAllBuildedModules();
     })
         .on(FILE_EVENTS.UNLINK, (filePath) => {
         const info = formatChangeInfo(FILE_EVENTS.UNLINK, filePath, packages, modulePath);
         logChange(info);
         // 调用公用函数检测并缓存变更的模块
         detectAndCacheChangedModules(modulePath);
-        getAllBuildedModules();
+        // 使用防抖版本，避免频繁调用
+        debouncedGetAllBuildedModules();
     })
         .on('error', (error) => {
         console.error(LOG_MESSAGES.WATCH_ERROR.replace('{error}', String(error)));

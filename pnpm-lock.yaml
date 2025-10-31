@@ -17,6 +17,9 @@ importers:
       chokidar:
         specifier: ^4.0.3
         version: 4.0.3
+      es-toolkit:
+        specifier: ^1.41.0
+        version: 1.41.0
       eventsource-parser:
         specifier: ^3.0.0
         version: 3.0.6
@@ -204,15 +207,15 @@ packages:
     os: [win32]
 
   '@isaacs/balanced-match@4.0.1':
-    resolution: {integrity: sha1-MIHa28NGBmG3UedZHX+upd853Sk=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/@isaacs/balanced-match/-/balanced-match-4.0.1.tgz}
+    resolution: {integrity: sha1-MIHa28NGBmG3UedZHX+upd853Sk=}
     engines: {node: 20 || >=22}
 
   '@isaacs/brace-expansion@5.0.0':
-    resolution: {integrity: sha1-Sz2rq32OdaQpQUqWvWe/TB0T4PM=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/@isaacs/brace-expansion/-/brace-expansion-5.0.0.tgz}
+    resolution: {integrity: sha1-Sz2rq32OdaQpQUqWvWe/TB0T4PM=}
     engines: {node: 20 || >=22}
 
   '@isaacs/cliui@8.0.2':
-    resolution: {integrity: sha1-s3Znt7wYHBaHgiWbq0JHT79StVA=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/@isaacs/cliui/-/cliui-8.0.2.tgz}
+    resolution: {integrity: sha1-s3Znt7wYHBaHgiWbq0JHT79StVA=}
     engines: {node: '>=12'}
 
   '@jridgewell/sourcemap-codec@1.5.5':
@@ -472,7 +475,7 @@ packages:
     engines: {node: '>=8'}
 
   ansi-regex@6.2.2:
-    resolution: {integrity: sha1-YCFu6kZNhkWXzigyAAc4oFiWUME=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/ansi-regex/-/ansi-regex-6.2.2.tgz}
+    resolution: {integrity: sha1-YCFu6kZNhkWXzigyAAc4oFiWUME=}
     engines: {node: '>=12'}
 
   ansi-styles@4.3.0:
@@ -480,14 +483,14 @@ packages:
     engines: {node: '>=8'}
 
   ansi-styles@6.2.3:
-    resolution: {integrity: sha1-wETV3MUhoHZBNHJZehrLHxA8QEE=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/ansi-styles/-/ansi-styles-6.2.3.tgz}
+    resolution: {integrity: sha1-wETV3MUhoHZBNHJZehrLHxA8QEE=}
     engines: {node: '>=12'}
 
   argparse@1.0.10:
-    resolution: {integrity: sha1-vNZ5HqWuCXJeF+WtmIE0zUCz2RE=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/argparse/-/argparse-1.0.10.tgz}
+    resolution: {integrity: sha1-vNZ5HqWuCXJeF+WtmIE0zUCz2RE=}
 
   argparse@2.0.1:
-    resolution: {integrity: sha1-JG9Q88p4oyQPbJl+ipvR6sSeSzg=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/argparse/-/argparse-2.0.1.tgz}
+    resolution: {integrity: sha1-JG9Q88p4oyQPbJl+ipvR6sSeSzg=}
 
   asynckit@0.4.0:
     resolution: {integrity: sha1-x57Zf380y48robyXkLzDZkdLS3k=}
@@ -518,7 +521,7 @@ packages:
     engines: {node: '>= 0.4'}
 
   chokidar@4.0.3:
-    resolution: {integrity: sha1-e+N6TAPJruHs/oYqSiOyxwwgXTA=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/chokidar/-/chokidar-4.0.3.tgz}
+    resolution: {integrity: sha1-e+N6TAPJruHs/oYqSiOyxwwgXTA=}
     engines: {node: '>= 14.16.0'}
 
   color-convert@2.0.1:
@@ -594,7 +597,7 @@ packages:
     engines: {node: '>= 0.4'}
 
   eastasianwidth@0.2.0:
-    resolution: {integrity: sha1-aWzi7Aqg5uqTo5f/zySqeEDIJ8s=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/eastasianwidth/-/eastasianwidth-0.2.0.tgz}
+    resolution: {integrity: sha1-aWzi7Aqg5uqTo5f/zySqeEDIJ8s=}
 
   ee-first@1.1.1:
     resolution: {integrity: sha1-WQxhFWsK4vTwJVcyoViyZrxWsh0=}
@@ -603,7 +606,7 @@ packages:
     resolution: {integrity: sha1-6Bj9ac5cz8tARZT4QpY79TFkzDc=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/emoji-regex/-/emoji-regex-8.0.0.tgz}
 
   emoji-regex@9.2.2:
-    resolution: {integrity: sha1-hAyIA7DYBH9P8M+WMXazLU7z7XI=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/emoji-regex/-/emoji-regex-9.2.2.tgz}
+    resolution: {integrity: sha1-hAyIA7DYBH9P8M+WMXazLU7z7XI=}
 
   encodeurl@2.0.0:
     resolution: {integrity: sha1-e46omAd9fkCdOsRUdOo46vCFelg=}
@@ -628,6 +631,9 @@ packages:
   es-set-tostringtag@2.1.0:
     resolution: {integrity: sha1-8x274MGDsAptJutjJcgQwP0YvU0=}
     engines: {node: '>= 0.4'}
+
+  es-toolkit@1.41.0:
+    resolution: {integrity: sha1-hOrNVNzIgmHXgAX956AcIpG5Big=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/es-toolkit/-/es-toolkit-1.41.0.tgz}
 
   esbuild@0.21.5:
     resolution: {integrity: sha1-nKMBsSCSKVm3ZjYNisgw2g0CmX0=}
@@ -686,7 +692,7 @@ packages:
         optional: true
 
   foreground-child@3.3.1:
-    resolution: {integrity: sha1-Mujp7Rtoo0l777msK2rfkqY4V28=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/foreground-child/-/foreground-child-3.3.1.tgz}
+    resolution: {integrity: sha1-Mujp7Rtoo0l777msK2rfkqY4V28=}
     engines: {node: '>=14'}
 
   form-data@4.0.4:
@@ -726,7 +732,7 @@ packages:
     engines: {node: '>= 0.4'}
 
   glob@11.0.3:
-    resolution: {integrity: sha1-nYCH5tct2zxHB7HSd4+A6j6u/NY=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/glob/-/glob-11.0.3.tgz}
+    resolution: {integrity: sha1-nYCH5tct2zxHB7HSd4+A6j6u/NY=}
     engines: {node: 20 || >=22}
     hasBin: true
 
@@ -795,14 +801,14 @@ packages:
     resolution: {integrity: sha1-6PvzdNxVb/iUehDcsFctYz8s+hA=}
 
   jackspeak@4.1.1:
-    resolution: {integrity: sha1-lodgMPRQUCBH/H6Mf8+M6BJOQ64=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/jackspeak/-/jackspeak-4.1.1.tgz}
+    resolution: {integrity: sha1-lodgMPRQUCBH/H6Mf8+M6BJOQ64=}
     engines: {node: 20 || >=22}
 
   jju@1.4.0:
     resolution: {integrity: sha1-o6vicYryQaKykE+EpiWXDzia4yo=}
 
   js-yaml@4.1.0:
-    resolution: {integrity: sha1-wftl+PUBeQHN0slRhkuhhFihBgI=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/js-yaml/-/js-yaml-4.1.0.tgz}
+    resolution: {integrity: sha1-wftl+PUBeQHN0slRhkuhhFihBgI=}
     hasBin: true
 
   json-schema-traverse@0.4.1:
@@ -825,7 +831,7 @@ packages:
     resolution: {integrity: sha1-Z5WRxWTDv/quhFTPCz3zcMPWkRw=}
 
   lru-cache@11.2.2:
-    resolution: {integrity: sha1-QP037f/PrkspQDecByLcbuqnXyQ=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/lru-cache/-/lru-cache-11.2.2.tgz}
+    resolution: {integrity: sha1-QP037f/PrkspQDecByLcbuqnXyQ=}
     engines: {node: 20 || >=22}
 
   lru-cache@6.0.0:
@@ -864,7 +870,7 @@ packages:
     engines: {node: '>= 0.6'}
 
   minimatch@10.0.3:
-    resolution: {integrity: sha1-z3oDFKFsTZq3OncwoOjjw1AtR6o=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/minimatch/-/minimatch-10.0.3.tgz}
+    resolution: {integrity: sha1-z3oDFKFsTZq3OncwoOjjw1AtR6o=}
     engines: {node: 20 || >=22}
 
   minimatch@9.0.5:
@@ -872,7 +878,7 @@ packages:
     engines: {node: '>=16 || 14 >=14.17'}
 
   minipass@7.1.2:
-    resolution: {integrity: sha1-k6libOXl5mvU24aEnnUV6SNApwc=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/minipass/-/minipass-7.1.2.tgz}
+    resolution: {integrity: sha1-k6libOXl5mvU24aEnnUV6SNApwc=}
     engines: {node: '>=16 || 14 >=14.17'}
 
   mlly@1.8.0:
@@ -918,7 +924,7 @@ packages:
     resolution: {integrity: sha1-WDsap3WWHUsROsF9nFC6753Xa9E=}
 
   package-json-from-dist@1.0.1:
-    resolution: {integrity: sha1-TxRxoBCCeob5TP2bByfjbSZ95QU=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/package-json-from-dist/-/package-json-from-dist-1.0.1.tgz}
+    resolution: {integrity: sha1-TxRxoBCCeob5TP2bByfjbSZ95QU=}
 
   parseurl@1.3.3:
     resolution: {integrity: sha1-naGee+6NEt/wUT7Vt2lXeTvC6NQ=}
@@ -935,7 +941,7 @@ packages:
     resolution: {integrity: sha1-+8EUtgykKzDZ2vWFjkvWi77bZzU=}
 
   path-scurry@2.0.0:
-    resolution: {integrity: sha1-nwUiifI62L+Tl6KgQl57hhXFhYA=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/path-scurry/-/path-scurry-2.0.0.tgz}
+    resolution: {integrity: sha1-nwUiifI62L+Tl6KgQl57hhXFhYA=}
     engines: {node: 20 || >=22}
 
   path-to-regexp@8.3.0:
@@ -986,7 +992,7 @@ packages:
     engines: {node: '>= 0.10'}
 
   readdirp@4.1.2:
-    resolution: {integrity: sha1-64WAFDX78qfuWPGeCSGwaPxplI0=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/readdirp/-/readdirp-4.1.2.tgz}
+    resolution: {integrity: sha1-64WAFDX78qfuWPGeCSGwaPxplI0=}
     engines: {node: '>= 14.18.0'}
 
   require-from-string@2.0.2:
@@ -1054,7 +1060,7 @@ packages:
     engines: {node: '>= 0.4'}
 
   signal-exit@4.1.0:
-    resolution: {integrity: sha1-lSGIwcvVRgcOLdIND0HArgUwywQ=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/signal-exit/-/signal-exit-4.1.0.tgz}
+    resolution: {integrity: sha1-lSGIwcvVRgcOLdIND0HArgUwywQ=}
     engines: {node: '>=14'}
 
   source-map-js@1.2.1:
@@ -1085,7 +1091,7 @@ packages:
     engines: {node: '>=8'}
 
   string-width@5.1.2:
-    resolution: {integrity: sha1-FPja7G2B5yIdKjV+Zoyrc728p5Q=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/string-width/-/string-width-5.1.2.tgz}
+    resolution: {integrity: sha1-FPja7G2B5yIdKjV+Zoyrc728p5Q=}
     engines: {node: '>=12'}
 
   strip-ansi@6.0.1:
@@ -1093,7 +1099,7 @@ packages:
     engines: {node: '>=8'}
 
   strip-ansi@7.1.2:
-    resolution: {integrity: sha1-Eyh1q95njH6o1pFTPy5+Irt0Tbo=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/strip-ansi/-/strip-ansi-7.1.2.tgz}
+    resolution: {integrity: sha1-Eyh1q95njH6o1pFTPy5+Irt0Tbo=}
     engines: {node: '>=12'}
 
   strip-json-comments@3.1.1:
@@ -1205,7 +1211,7 @@ packages:
     engines: {node: '>=10'}
 
   wrap-ansi@8.1.0:
-    resolution: {integrity: sha1-VtwiNo7lcPrOG0mBmXXZuaXq0hQ=, tarball: https://artsz.zte.com.cn:443/artifactory/api/npm/it-npm-virtual/wrap-ansi/-/wrap-ansi-8.1.0.tgz}
+    resolution: {integrity: sha1-VtwiNo7lcPrOG0mBmXXZuaXq0hQ=}
     engines: {node: '>=12'}
 
   wrappy@1.0.2:
@@ -1720,6 +1726,8 @@ snapshots:
       get-intrinsic: 1.3.0
       has-tostringtag: 1.0.2
       hasown: 2.0.2
+
+  es-toolkit@1.41.0: {}
 
   esbuild@0.21.5:
     optionalDependencies:

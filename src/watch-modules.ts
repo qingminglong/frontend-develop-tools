@@ -1,20 +1,10 @@
 #!/usr/bin/env node
-
-/**
- * pnpm workspace 模块变化监控脚本
- * 监控所有workspace包的src目录变化，实时输出变化的模块信息
- *
- * 使用方式：
- *   node watch-modules.js [项目路径]
- *   node watch-modules.js /path/to/your/project
- *   node watch-modules.js --help
- */
-
 import chokidar, { type FSWatcher } from 'chokidar'
 import path from 'path'
 import yaml from 'js-yaml'
 import fs from 'fs'
 import { glob } from 'glob'
+import { debounce } from 'es-toolkit'
 import { detectAndCacheChangedModules } from './detect-changed-modules.js'
 import { getAllBuildedModules } from './build-modules.js'
 import type {
@@ -38,6 +28,11 @@ import {
   LOG_MESSAGES,
   ERROR_MESSAGES
 } from './consts/index.js'
+
+// 创建防抖版本的 getAllBuildedModules 函数，间隔 1 秒
+const debouncedGetAllBuildedModules = debounce(() => {
+  getAllBuildedModules()
+}, 2000)
 
 /**
  * 读取pnpm-workspace.yaml配置
@@ -224,7 +219,8 @@ export function watchModulesWithPath(modulePath: string): FSWatcher {
       logChange(info)
       // 调用公用函数检测并缓存变更的模块
       detectAndCacheChangedModules(modulePath)
-      getAllBuildedModules()
+      // 使用防抖版本，避免频繁调用
+      debouncedGetAllBuildedModules()
     })
     .on(FILE_EVENTS.CHANGE, (filePath: string) => {
       const info = formatChangeInfo(
@@ -236,7 +232,8 @@ export function watchModulesWithPath(modulePath: string): FSWatcher {
       logChange(info)
       // 调用公用函数检测并缓存变更的模块
       detectAndCacheChangedModules(modulePath)
-      getAllBuildedModules()
+      // 使用防抖版本，避免频繁调用
+      debouncedGetAllBuildedModules()
     })
     .on(FILE_EVENTS.UNLINK, (filePath: string) => {
       const info = formatChangeInfo(
@@ -248,7 +245,8 @@ export function watchModulesWithPath(modulePath: string): FSWatcher {
       logChange(info)
       // 调用公用函数检测并缓存变更的模块
       detectAndCacheChangedModules(modulePath)
-      getAllBuildedModules()
+      // 使用防抖版本，避免频繁调用
+      debouncedGetAllBuildedModules()
     })
     .on('error', (error: unknown) => {
       console.error(LOG_MESSAGES.WATCH_ERROR.replace('{error}', String(error)))

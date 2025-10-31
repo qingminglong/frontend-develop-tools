@@ -11,11 +11,7 @@ let cachedBuildModules = [];
 /**
  * 全局变量：标识所有模块是否已经编译完成
  */
-let isReady = false;
-/**
- * callback 变化时的回调函数
- */
-let callback = () => { };
+let isFinished = false;
 /**
  * 读取package.json并获取依赖信息
  * @param packageJsonPath - package.json文件路径
@@ -259,12 +255,12 @@ export function getAllBuildedModules() {
     // 调用前清空缓存
     cachedBuildModules = [];
     // 重置编译完成状态
-    executeCallback(false);
+    updateStatus(false);
     const buildedModules = getBuildedModules();
     const modules = Object.values(buildedModules).flat();
     // 更新缓存
     cachedBuildModules = modules;
-    executeCallback(true);
+    updateStatus(true);
     return modules;
 }
 /**
@@ -279,14 +275,13 @@ function getCachedBuildModules() {
  * 当状态变为 true 时，会触发所有注册的回调函数
  * @param value - 新的状态值
  */
-function executeCallback(value) {
-    const oldValue = isReady;
-    isReady = value;
+function updateStatus(value) {
+    isFinished = value;
     // 只有当状态变为 true 时，才触发回调
     if (value) {
         console.error(LOG_MESSAGES.ALL_MODULES_READY);
         try {
-            callback();
+            buildModules();
         }
         catch (error) {
             console.error('执行编译完成回调时出错:', error);
@@ -300,7 +295,7 @@ function executeCallback(value) {
  * @returns 编译是否成功执行
  */
 export function buildModules() {
-    if (!isReady) {
+    if (!isFinished) {
         console.error(LOG_MESSAGES.READY_FALSE_SKIP);
         return false;
     }
@@ -324,17 +319,3 @@ export function buildModules() {
     console.error(LOG_MESSAGES.BUILD_COMPLETE);
     return true;
 }
-/**
- * 初始化编译监听器
- * 自动注册 isReady 监听，当变为 true 时执行编译
- */
-export function initListener() {
-    console.error(LOG_MESSAGES.INIT_LISTENER);
-    callback = () => {
-        console.error(LOG_MESSAGES.READY_TRIGGER);
-        buildModules();
-    };
-    console.error(LOG_MESSAGES.LISTENER_READY);
-}
-// 模块加载时自动初始化监听器
-initListener();

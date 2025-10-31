@@ -150,7 +150,7 @@ export const LOG_MESSAGES = {
     NO_DEPENDENCY_INFO: '⚠️  未找到任何包依赖信息，仅编译变更的模块',
     BUILD_TOTAL: '\n✅ 共需编译 {count} 个模块（包含依赖）:',
     CIRCULAR_DEPENDENCY: '检测到循环依赖: {name}',
-    ALL_MODULES_READY: '✅ 所有模块编译完成，触发回调...',
+    ALL_MODULES_READY: '✅ 模块编译前的准备工作完成，开始编译...',
     READY_FALSE_SKIP: '⚠️  isReady 为 false，跳过编译操作',
     NO_MODULES_TO_BUILD: 'ℹ️  没有需要编译的模块',
     BUILD_START: '\n🔨 开始编译 {count} 个模块...\n',

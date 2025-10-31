@@ -29,13 +29,14 @@
   "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.16.0",
-    "eventsource-parser": "^3.0.0",
     "axios": "^1.11.0",
-    "node-fetch": "^3.3.2",
-    "zod": "^3.25.76",
     "chokidar": "^4.0.3",
+    "es-toolkit": "^1.41.0",
+    "eventsource-parser": "^3.0.0",
+    "glob": "^11.0.0",
     "js-yaml": "^4.1.0",
-    "glob": "^11.0.0"
+    "node-fetch": "^3.3.2",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "*",
