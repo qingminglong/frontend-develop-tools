@@ -1,6 +1,7 @@
 import { watchModulesWithPath } from './watch-modules.js'
 import { configuration } from './get-configuration.js'
 import type { FSWatcher } from 'chokidar'
+import { ERROR_MESSAGES, WATCHER_STATUS } from './consts/index.js'
 
 /**
  * 启动模块监控
@@ -11,7 +12,7 @@ export function startWatchingModules(
   watchers: Map<string, FSWatcher>
 ): Array<{ path: string; status: string; error?: string }> {
   if (configuration.modulePaths.length === 0) {
-    throw new Error('没有配置需要监控的模块路径')
+    throw new Error(ERROR_MESSAGES.NO_MODULE_PATHS)
   }
 
   const results: Array<{ path: string; status: string; error?: string }> = []
@@ -23,7 +24,7 @@ export function startWatchingModules(
       if (watchers.has(modulePath)) {
         results.push({
           path: modulePath,
-          status: 'already_watching'
+          status: WATCHER_STATUS.ALREADY_WATCHING
         })
         continue
       }
@@ -34,13 +35,14 @@ export function startWatchingModules(
 
       results.push({
         path: modulePath,
-        status: 'started'
+        status: WATCHER_STATUS.STARTED
       })
     } catch (error) {
       results.push({
         path: modulePath,
-        status: 'failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        status: WATCHER_STATUS.FAILED,
+        error:
+          error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR
       })
     }
   }

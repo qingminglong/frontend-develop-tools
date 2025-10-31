@@ -8,6 +8,15 @@ import type {
   WorkspacePackage,
   WorkspaceConfig
 } from './types/detect-changed-modules.ts'
+import {
+  FILE_NAMES,
+  ENCODINGS,
+  PACKAGE_FIELDS,
+  GIT_COMMANDS,
+  SPECIAL_CHARS,
+  ERROR_MESSAGES,
+  LOG_MESSAGES
+} from './consts/index.js'
 
 // 按项目路径缓存模块信息详情
 export const modulesInfosDetail: Record<string, ModuleInfo[]> = {}
@@ -18,18 +27,18 @@ export const modulesInfosDetail: Record<string, ModuleInfo[]> = {}
  * @returns 包信息数组
  */
 function getWorkspacePackages(modulePath: string): WorkspacePackage[] {
-  const workspaceFile = path.join(modulePath, 'pnpm-workspace.yaml')
+  const workspaceFile = path.join(modulePath, FILE_NAMES.WORKSPACE_CONFIG)
   // 如果不存在workspace文件，返回空数组
   if (!fs.existsSync(workspaceFile)) {
     return []
   }
-  const content = fs.readFileSync(workspaceFile, 'utf8')
+  const content = fs.readFileSync(workspaceFile, ENCODINGS.UTF8)
   const config = yaml.load(content) as WorkspaceConfig
   const packages: WorkspacePackage[] = []
 
-  config.packages.forEach((pattern: string) => {
+  config[PACKAGE_FIELDS.PACKAGES].forEach((pattern: string) => {
     // 跳过排除模式
-    if (pattern.startsWith('!')) {
+    if (pattern.startsWith(SPECIAL_CHARS.EXCLAMATION)) {
       return
     }
     // 解析glob pattern
@@ -39,8 +48,8 @@ function getWorkspacePackages(modulePath: string): WorkspacePackage[] {
     })
     matches.forEach((match) => {
       const packagePath = path.join(modulePath, match)
-      const srcPath = path.join(packagePath, 'src')
-      const packageJsonPath = path.join(packagePath, 'package.json')
+      const srcPath = path.join(packagePath, FILE_NAMES.SRC_DIR)
+      const packageJsonPath = path.join(packagePath, FILE_NAMES.PACKAGE_JSON)
       // 检查是否存在src目录和package.json
       if (fs.existsSync(srcPath) && fs.existsSync(packageJsonPath)) {
         packages.push({
@@ -63,32 +72,29 @@ function getWorkspacePackages(modulePath: string): WorkspacePackage[] {
 function getChangedFiles(modulePath: string): string[] {
   try {
     // 切换到项目根目录执行git命令
-    const unstagedFiles = execSync('git diff --name-only', {
-      encoding: 'utf8',
+    const unstagedFiles = execSync(GIT_COMMANDS.DIFF_NAME_ONLY, {
+      encoding: ENCODINGS.UTF8,
       cwd: modulePath
     })
-      .split('\n')
+      .split(SPECIAL_CHARS.NEWLINE)
       .filter(Boolean)
-    const stagedFiles = execSync('git diff --cached --name-only', {
-      encoding: 'utf8',
+    const stagedFiles = execSync(GIT_COMMANDS.DIFF_CACHED_NAME_ONLY, {
+      encoding: ENCODINGS.UTF8,
       cwd: modulePath
     })
-      .split('\n')
+      .split(SPECIAL_CHARS.NEWLINE)
       .filter(Boolean)
-    const untrackedFiles = execSync(
-      'git ls-files --others --exclude-standard',
-      {
-        encoding: 'utf8',
-        cwd: modulePath
-      }
-    )
-      .split('\n')
+    const untrackedFiles = execSync(GIT_COMMANDS.LS_FILES_UNTRACKED, {
+      encoding: ENCODINGS.UTF8,
+      cwd: modulePath
+    })
+      .split(SPECIAL_CHARS.NEWLINE)
       .filter(Boolean)
     return [...new Set([...unstagedFiles, ...stagedFiles, ...untrackedFiles])]
   } catch (error) {
     console.error(
       `获取git变更文件失败: ${
-        error instanceof Error ? error.message : 'Unknown error'
+        error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR
       }`
     )
     return []
@@ -101,11 +107,11 @@ function getChangedFiles(modulePath: string): string[] {
  */
 function getPackageName(packageJsonPath: string): string | null {
   try {
-    const content = fs.readFileSync(packageJsonPath, 'utf8')
+    const content = fs.readFileSync(packageJsonPath, ENCODINGS.UTF8)
     const pkg = JSON.parse(content)
-    return pkg.name || null
+    return pkg[PACKAGE_FIELDS.NAME] || null
   } catch (error) {
-    console.error(`读取package.json失败: ${packageJsonPath}`)
+    console.error(`读取${FILE_NAMES.PACKAGE_JSON}失败: ${packageJsonPath}`)
     return null
   }
 }
@@ -156,7 +162,7 @@ export function detectAndCacheChangedModules(modulePath: string): ModuleInfo[] {
   // 获取所有工作区包
   const packages = getWorkspacePackages(modulePath)
   if (packages.length === 0) {
-    console.error('未找到任何工作区包')
+    console.error(ERROR_MESSAGES.NO_WORKSPACE_PACKAGES)
     // 更新缓存为空
     modulesInfosDetail[modulePath] = []
     return []
@@ -164,7 +170,7 @@ export function detectAndCacheChangedModules(modulePath: string): ModuleInfo[] {
   // 获取git变更文件
   const changedFiles = getChangedFiles(modulePath)
   if (changedFiles.length === 0) {
-    console.error('未检测到任何文件变更')
+    console.error(ERROR_MESSAGES.NO_FILE_CHANGES)
     // 更新缓存为空
     modulesInfosDetail[modulePath] = []
     return []
@@ -181,7 +187,12 @@ export function detectAndCacheChangedModules(modulePath: string): ModuleInfo[] {
   // 更新按项目路径的缓存（支持多项目）
   modulesInfosDetail[modulePath].push(...affectedModules)
 
-  console.error(`📦 检测到 ${affectedModules.length} 个模块发生变更:`)
+  console.error(
+    LOG_MESSAGES.MODULES_DETECTED.replace(
+      '{count}',
+      String(affectedModules.length)
+    )
+  )
   affectedModules.forEach((m) => {
     console.error(`   - ${m.moduleName} (${m.modulePath})`)
   })

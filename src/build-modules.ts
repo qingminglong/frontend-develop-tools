@@ -414,24 +414,26 @@ function executeCallback(value: boolean): void {
  */
 export function buildModules(): boolean {
   if (!isReady) {
-    console.error('⚠️  isReady 为 false，跳过编译操作')
+    console.error(LOG_MESSAGES.READY_FALSE_SKIP)
     return false
   }
 
   const modules = getCachedBuildModules()
 
   if (modules.length === 0) {
-    console.error('ℹ️  没有需要编译的模块')
+    console.error(LOG_MESSAGES.NO_MODULES_TO_BUILD)
     return true
   }
 
-  console.error(`\n🔨 开始编译 ${modules.length} 个模块...\n`)
+  console.error(
+    LOG_MESSAGES.BUILD_START.replace('{count}', String(modules.length))
+  )
 
   modules.forEach((module, index) => {
     const reasonText =
-      module.reason === 'changed'
+      module.reason === BUILD_REASON.CHANGED
         ? '直接变更'
-        : `被依赖 (${module.dependedBy?.join(', ') ?? ''})`
+        : `被依赖 (${module.dependedBy?.join(SPECIAL_CHARS.COMMA + ' ') ?? ''})`
 
     console.error(
       `[${index + 1}/${modules.length}] 编译模块: ${module.moduleName}`
@@ -442,10 +444,10 @@ export function buildModules(): boolean {
     // TODO: 在这里添加实际的编译逻辑
     // 例如：执行 pnpm build 或其他构建命令
 
-    console.error(`   ✅ 编译完成\n`)
+    console.error(`   ✅ 编译完成${SPECIAL_CHARS.NEWLINE}`)
   })
 
-  console.error('🎉 所有模块编译完成！\n')
+  console.error(LOG_MESSAGES.BUILD_COMPLETE)
 
   return true
 }
@@ -455,13 +457,13 @@ export function buildModules(): boolean {
  * 自动注册 isReady 监听，当变为 true 时执行编译
  */
 export function initListener(): void {
-  console.error('📡 初始化编译监听器...')
+  console.error(LOG_MESSAGES.INIT_LISTENER)
   callback = () => {
-    console.error('🔔 检测到 isReady 变为 true，开始执行编译...')
+    console.error(LOG_MESSAGES.READY_TRIGGER)
     buildModules()
   }
 
-  console.error('✅ 编译监听器初始化完成\n')
+  console.error(LOG_MESSAGES.LISTENER_READY)
 }
 
 // 模块加载时自动初始化监听器

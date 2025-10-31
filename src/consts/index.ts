@@ -111,7 +111,7 @@ export const CHOKIDAR_CONFIG = {
     '**/node_modules/**', // 忽略node_modules
     '**/dist/**', // 忽略构建产物
     '**/*.map' // 忽略source map
-  ],
+  ] as Array<RegExp | string>,
   STABILITY_THRESHOLD: 100, // 文件稳定100ms后才触发
   POLL_INTERVAL: 50
 } as const
