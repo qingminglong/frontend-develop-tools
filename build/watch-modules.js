@@ -14,6 +14,7 @@ import yaml from 'js-yaml';
 import fs from 'fs';
 import { glob } from 'glob';
 import { detectAndCacheChangedModules } from './detect-changed-modules.js';
+import { getAllBuildedModules } from './build-modules.js';
 /**
  * 读取pnpm-workspace.yaml配置
  * @param {string} modulePath - 项目根目录路径
@@ -171,18 +172,21 @@ export function watchModulesWithPath(modulePath) {
         logChange(info);
         // 调用公用函数检测并缓存变更的模块
         detectAndCacheChangedModules(modulePath);
+        getAllBuildedModules();
     })
         .on('change', (filePath) => {
         const info = formatChangeInfo('change', filePath, packages, modulePath);
         logChange(info);
         // 调用公用函数检测并缓存变更的模块
         detectAndCacheChangedModules(modulePath);
+        getAllBuildedModules();
     })
         .on('unlink', (filePath) => {
         const info = formatChangeInfo('unlink', filePath, packages, modulePath);
         logChange(info);
         // 调用公用函数检测并缓存变更的模块
         detectAndCacheChangedModules(modulePath);
+        getAllBuildedModules();
     })
         .on('error', (error) => {
         console.error(`❌ 监控错误: ${error}`);

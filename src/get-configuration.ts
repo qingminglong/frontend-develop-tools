@@ -1,10 +1,4 @@
-/**
- * 项目配置接口定义
- */
-export interface ProjectConfig {
-  modulePaths: string[]
-  projectPaths: string[]
-}
+import type { ProjectConfig } from './types/get-configuration.js'
 
 /**
  * 解析环境变量为字符串数组，支持多种格式

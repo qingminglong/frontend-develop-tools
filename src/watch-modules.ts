@@ -17,28 +17,13 @@ import fs from 'fs'
 import { glob } from 'glob'
 import { detectAndCacheChangedModules } from './detect-changed-modules.js'
 import { getAllBuildedModules } from './build-modules.js'
-
-// 类型定义
-interface WorkspacePackage {
-  name: string
-  path: string
-  srcPath: string
-}
-
-interface WorkspaceConfig {
-  packages: string[]
-}
-
-interface ChangeInfo {
-  timestamp: string
-  event: string
-  module: string
-  file: string
-  fullPath: string
-}
-
-type EventType = 'add' | 'change' | 'unlink'
-type EventNameType = '新增' | '修改' | '删除'
+import type {
+  WorkspacePackage,
+  WorkspaceConfig,
+  ChangeInfo,
+  EventType,
+  EventNameType
+} from './types/watch-modules.js'
 
 /**
  * 读取pnpm-workspace.yaml配置

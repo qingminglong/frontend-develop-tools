@@ -1,30 +1,13 @@
-import {
-  modulesInfosDetail,
-  type ModuleInfo
-} from './detect-changed-modules.js'
+import { modulesInfosDetail } from './detect-changed-modules.js'
 import path from 'path'
 import fs from 'fs'
 import { glob } from 'glob'
 import yaml from 'js-yaml'
-
-/**
- * 包依赖信息
- */
-interface PackageDependencyInfo {
-  name: string // 包名
-  path: string // 包路径
-  dependencies: Set<string> // 依赖的包名列表
-}
-
-/**
- * 编译模块信息
- */
-export interface BuildedModule {
-  moduleName: string
-  modulePath: string
-  reason: 'changed' | 'dependent' // 编译原因：changed-直接变更，dependent-作为依赖被影响
-  dependedBy?: string[] // 如果是dependent，记录是被哪些模块依赖的
-}
+import type { ModuleInfo } from './types/detect-changed-modules.js'
+import type {
+  PackageDependencyInfo,
+  BuildedModule
+} from './types/build-modules.js'
 
 /**
  * 全局变量：缓存所有需要编译的模块列表

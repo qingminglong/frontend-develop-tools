@@ -3,26 +3,14 @@ import path from 'path'
 import fs from 'fs'
 import yaml from 'js-yaml'
 import { glob } from 'glob'
-
-// 模块信息接口
-export interface ModuleInfo {
-  moduleName: string
-  modulePath: string
-}
+import type {
+  ModuleInfo,
+  WorkspacePackage,
+  WorkspaceConfig
+} from './types/detect-changed-modules.js'
 
 // 按项目路径缓存模块信息详情
 export const modulesInfosDetail: Record<string, ModuleInfo[]> = {}
-
-interface WorkspacePackage {
-  name: string
-  path: string
-  srcPath: string
-  packageJsonPath: string
-}
-
-interface WorkspaceConfig {
-  packages: string[]
-}
 
 /**
  * 从modulesPath下获取所有工作区包的信息
