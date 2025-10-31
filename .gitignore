@@ -8,16 +8,6 @@ package-lock.json
 .idea
 .vscode
 dist
-lib
-es
-linker.json
-screenshots
-upload_art.sh
-.npmrc
-.pnpm-store
-my.sh
-.nx
-demo/schema-transfer/**/output
-demo/schema-transfer/market_page/output
 .specstory
 .cursorindexingignore
+build/

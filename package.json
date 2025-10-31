@@ -1,7 +1,8 @@
 {
   "name": "frontend-develop-tools",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "type": "module",
   "bin": {
     "frontend-develop-tools": "build/index.js"
@@ -9,6 +10,16 @@
   "files": [
     "build"
   ],
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "import": "./build/index.js"
+    },
+    "./types": {
+      "types": "./build/types/index.d.ts",
+      "import": "./build/types/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc && chmod 755 build/index.js",
     "debug": "node build/index.js"
