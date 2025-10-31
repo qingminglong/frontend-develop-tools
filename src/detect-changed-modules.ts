@@ -7,7 +7,7 @@ import type {
   ModuleInfo,
   WorkspacePackage,
   WorkspaceConfig
-} from './types/detect-changed-modules.ts'
+} from './types/detect-changed-modules.js'
 import {
   FILE_NAMES,
   ENCODINGS,

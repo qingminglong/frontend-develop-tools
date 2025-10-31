@@ -15,13 +15,14 @@ import fs from 'fs';
 import { glob } from 'glob';
 import { detectAndCacheChangedModules } from './detect-changed-modules.js';
 import { getAllBuildedModules } from './build-modules.js';
+import { FILE_NAMES, ENCODINGS, PACKAGE_FIELDS, FILE_EVENTS, EVENT_NAMES, SPECIAL_CHARS, ANSI_COLORS, CHOKIDAR_CONFIG, DATE_FORMAT_OPTIONS, LOCALES, LOG_MESSAGES, ERROR_MESSAGES } from './consts/index.js';
 /**
  * 读取pnpm-workspace.yaml配置
  * @param {string} modulePath - 项目根目录路径
  */
 function readWorkspaceConfig(modulePath) {
-    const workspaceFile = path.join(modulePath, 'pnpm-workspace.yaml');
-    const content = fs.readFileSync(workspaceFile, 'utf8');
+    const workspaceFile = path.join(modulePath, FILE_NAMES.WORKSPACE_CONFIG);
+    const content = fs.readFileSync(workspaceFile, ENCODINGS.UTF8);
     return yaml.load(content);
 }
 /**
@@ -33,7 +34,7 @@ function getWorkspacePackages(patterns, rootDir) {
     const packages = [];
     patterns.forEach((pattern) => {
         // 跳过排除模式
-        if (pattern.startsWith('!')) {
+        if (pattern.startsWith(SPECIAL_CHARS.EXCLAMATION)) {
             return;
         }
         // 解析glob pattern
@@ -43,7 +44,7 @@ function getWorkspacePackages(patterns, rootDir) {
         });
         matches.forEach((match) => {
             const packagePath = path.join(rootDir, match);
-            const srcPath = path.join(packagePath, 'src');
+            const srcPath = path.join(packagePath, FILE_NAMES.SRC_DIR);
             // 检查是否存在src目录
             if (fs.existsSync(srcPath)) {
                 packages.push({
@@ -71,19 +72,11 @@ function formatChangeInfo(event, filePath, packages, rootDir) {
         return null;
     }
     const fileRelativeToSrc = path.relative(matchedPackage.srcPath, filePath);
-    const timestamp = new Date().toLocaleString('zh-CN', {
-        hour12: false,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
+    const timestamp = new Date().toLocaleString(LOCALES.ZH_CN, DATE_FORMAT_OPTIONS);
     const eventMap = {
-        add: '新增',
-        change: '修改',
-        unlink: '删除'
+        [FILE_EVENTS.ADD]: EVENT_NAMES.ADD,
+        [FILE_EVENTS.CHANGE]: EVENT_NAMES.CHANGE,
+        [FILE_EVENTS.UNLINK]: EVENT_NAMES.UNLINK
     };
     return {
         timestamp,
@@ -97,27 +90,16 @@ function formatChangeInfo(event, filePath, packages, rootDir) {
 function logChange(info) {
     if (!info)
         return;
-    const colors = {
-        reset: '\x1b[0m',
-        bright: '\x1b[1m',
-        dim: '\x1b[2m',
-        red: '\x1b[31m',
-        green: '\x1b[32m',
-        yellow: '\x1b[33m',
-        blue: '\x1b[34m',
-        magenta: '\x1b[35m',
-        cyan: '\x1b[36m'
-    };
     const eventColor = {
-        新增: colors.green,
-        修改: colors.yellow,
-        删除: colors.red
+        [EVENT_NAMES.ADD]: ANSI_COLORS.GREEN,
+        [EVENT_NAMES.CHANGE]: ANSI_COLORS.YELLOW,
+        [EVENT_NAMES.UNLINK]: ANSI_COLORS.RED
     };
-    const eventColorValue = eventColor[info.event] || colors.cyan;
-    console.error(`${colors.dim}[${info.timestamp}]${colors.reset} ` +
-        `${eventColorValue}${info.event}${colors.reset} ` +
-        `${colors.bright}${colors.magenta}${info.module}${colors.reset} ` +
-        `${colors.cyan}${info.file}${colors.reset}`);
+    const eventColorValue = eventColor[info.event] || ANSI_COLORS.CYAN;
+    console.error(`${ANSI_COLORS.DIM}[${info.timestamp}]${ANSI_COLORS.RESET} ` +
+        `${eventColorValue}${info.event}${ANSI_COLORS.RESET} ` +
+        `${ANSI_COLORS.BRIGHT}${ANSI_COLORS.MAGENTA}${info.module}${ANSI_COLORS.RESET} ` +
+        `${ANSI_COLORS.CYAN}${info.file}${ANSI_COLORS.RESET}`);
 }
 /**
  * 监控指定路径的模块变化
@@ -126,70 +108,65 @@ function logChange(info) {
  */
 export function watchModulesWithPath(modulePath) {
     // 使用 console.error 输出到 stderr，避免干扰 MCP 的 stdout 通信
-    console.error(`📂 监控项目: ${modulePath}\n`);
+    console.error(LOG_MESSAGES.MONITORING_PROJECT.replace('{path}', modulePath));
     // 验证路径
     if (!fs.existsSync(modulePath)) {
-        throw new Error(`项目路径不存在: ${modulePath}`);
+        throw new Error(`${ERROR_MESSAGES.PATH_NOT_EXISTS}: ${modulePath}`);
     }
-    const workspaceFile = path.join(modulePath, 'pnpm-workspace.yaml');
+    const workspaceFile = path.join(modulePath, FILE_NAMES.WORKSPACE_CONFIG);
     if (!fs.existsSync(workspaceFile)) {
-        throw new Error(`在项目路径中找不到 pnpm-workspace.yaml 文件: ${workspaceFile}`);
+        throw new Error(`${ERROR_MESSAGES.WORKSPACE_FILE_NOT_FOUND}: ${workspaceFile}`);
     }
     // 读取workspace配置
     const config = readWorkspaceConfig(modulePath);
-    const packages = getWorkspacePackages(config.packages, modulePath);
+    const packages = getWorkspacePackages(config[PACKAGE_FIELDS.PACKAGES], modulePath);
     if (packages.length === 0) {
-        console.error('⚠️  警告: 没有找到包含 src 目录的模块');
-        console.error('   请检查 pnpm-workspace.yaml 配置和包目录结构');
+        console.error(LOG_MESSAGES.NO_SRC_MODULES);
+        console.error(LOG_MESSAGES.CHECK_CONFIG);
     }
-    console.error(`📦 找到 ${packages.length} 个包含 src 目录的模块:\n`);
+    console.error(LOG_MESSAGES.MODULES_FOUND.replace('{count}', String(packages.length)));
     packages.forEach((pkg) => {
         console.error(`   - ${pkg.name}`);
     });
-    console.error('\n👀 开始监控文件变化...\n');
+    console.error(LOG_MESSAGES.START_WATCHING);
     console.error('━'.repeat(80));
     console.error('');
     // 创建监控器
     const watchPaths = packages.map((pkg) => pkg.srcPath);
     const watcher = chokidar.watch(watchPaths, {
-        ignored: [
-            /(^|[\/\\])\../, // 忽略隐藏文件
-            '**/node_modules/**', // 忽略node_modules
-            '**/dist/**', // 忽略构建产物
-            '**/*.map' // 忽略source map
-        ],
+        ignored: CHOKIDAR_CONFIG.IGNORED_PATTERNS,
         persistent: true,
         ignoreInitial: true, // 忽略初始扫描
         awaitWriteFinish: {
-            stabilityThreshold: 100, // 文件稳定100ms后才触发
-            pollInterval: 50
+            stabilityThreshold: CHOKIDAR_CONFIG.STABILITY_THRESHOLD,
+            pollInterval: CHOKIDAR_CONFIG.POLL_INTERVAL
         }
     });
     // 监听变化事件
     watcher
-        .on('add', (filePath) => {
-        const info = formatChangeInfo('add', filePath, packages, modulePath);
+        .on(FILE_EVENTS.ADD, (filePath) => {
+        const info = formatChangeInfo(FILE_EVENTS.ADD, filePath, packages, modulePath);
         logChange(info);
         // 调用公用函数检测并缓存变更的模块
         detectAndCacheChangedModules(modulePath);
         getAllBuildedModules();
     })
-        .on('change', (filePath) => {
-        const info = formatChangeInfo('change', filePath, packages, modulePath);
+        .on(FILE_EVENTS.CHANGE, (filePath) => {
+        const info = formatChangeInfo(FILE_EVENTS.CHANGE, filePath, packages, modulePath);
         logChange(info);
         // 调用公用函数检测并缓存变更的模块
         detectAndCacheChangedModules(modulePath);
         getAllBuildedModules();
     })
-        .on('unlink', (filePath) => {
-        const info = formatChangeInfo('unlink', filePath, packages, modulePath);
+        .on(FILE_EVENTS.UNLINK, (filePath) => {
+        const info = formatChangeInfo(FILE_EVENTS.UNLINK, filePath, packages, modulePath);
         logChange(info);
         // 调用公用函数检测并缓存变更的模块
         detectAndCacheChangedModules(modulePath);
         getAllBuildedModules();
     })
         .on('error', (error) => {
-        console.error(`❌ 监控错误: ${error}`);
+        console.error(LOG_MESSAGES.WATCH_ERROR.replace('{error}', String(error)));
     });
     return watcher;
 }

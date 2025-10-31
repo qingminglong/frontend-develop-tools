@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { glob } from 'glob';
 import yaml from 'js-yaml';
+import { FILE_NAMES, ENCODINGS, PACKAGE_FIELDS, DEPENDENCY_TYPES, BUILD_REASON, SPECIAL_CHARS, LOG_MESSAGES } from './consts/index.js';
 /**
  * 全局变量：缓存所有需要编译的模块列表
  */
@@ -22,12 +23,11 @@ let callback = () => { };
  */
 function getPackageDependencies(packageJsonPath) {
     try {
-        const content = fs.readFileSync(packageJsonPath, 'utf8');
+        const content = fs.readFileSync(packageJsonPath, ENCODINGS.UTF8);
         const pkg = JSON.parse(content);
         const dependencies = new Set();
         // 收集所有类型的依赖
-        const depTypes = ['dependencies', 'devDependencies', 'peerDependencies'];
-        depTypes.forEach((depType) => {
+        DEPENDENCY_TYPES.forEach((depType) => {
             if (pkg[depType]) {
                 Object.keys(pkg[depType]).forEach((dep) => {
                     dependencies.add(dep);
@@ -35,12 +35,12 @@ function getPackageDependencies(packageJsonPath) {
             }
         });
         return {
-            name: pkg.name,
+            name: pkg[PACKAGE_FIELDS.NAME],
             dependencies
         };
     }
     catch (error) {
-        console.error(`读取package.json失败: ${packageJsonPath}`, error);
+        console.error(`读取${FILE_NAMES.PACKAGE_JSON}失败: ${packageJsonPath}`, error);
         return null;
     }
 }
@@ -52,23 +52,23 @@ function getPackageDependencies(packageJsonPath) {
 function getAllPackageDependencies(projectPath) {
     const dependencyMap = new Map();
     // 读取pnpm-workspace.yaml或lerna.json来获取所有包路径
-    const workspaceFile = path.join(projectPath, 'pnpm-workspace.yaml');
+    const workspaceFile = path.join(projectPath, FILE_NAMES.WORKSPACE_CONFIG);
     if (!fs.existsSync(workspaceFile)) {
         console.error(`未找到workspace配置文件: ${workspaceFile}`);
         return dependencyMap;
     }
     // 使用glob查找所有package.json
-    const workspaceContent = fs.readFileSync(workspaceFile, 'utf8');
+    const workspaceContent = fs.readFileSync(workspaceFile, ENCODINGS.UTF8);
     const workspaceConfig = yaml.load(workspaceContent);
-    workspaceConfig.packages.forEach((pattern) => {
-        if (pattern.startsWith('!'))
+    workspaceConfig[PACKAGE_FIELDS.PACKAGES].forEach((pattern) => {
+        if (pattern.startsWith(SPECIAL_CHARS.EXCLAMATION))
             return; // 跳过排除模式
         const matches = glob.globSync(pattern, {
             cwd: projectPath,
             absolute: false
         });
         matches.forEach((match) => {
-            const packageJsonPath = path.join(projectPath, match, 'package.json');
+            const packageJsonPath = path.join(projectPath, match, FILE_NAMES.PACKAGE_JSON);
             if (fs.existsSync(packageJsonPath)) {
                 const depInfo = getPackageDependencies(packageJsonPath);
                 if (depInfo) {
@@ -120,7 +120,7 @@ function analyzeModulesToBuild(changedModules, dependencyMap) {
         buildModulesMap.set(module.moduleName, {
             moduleName: module.moduleName,
             modulePath: module.modulePath,
-            reason: 'changed'
+            reason: BUILD_REASON.CHANGED
         });
     });
     // 对每个变更的模块，查找依赖它的父模块
@@ -132,12 +132,12 @@ function analyzeModulesToBuild(changedModules, dependencyMap) {
                 buildModulesMap.set(depName, {
                     moduleName: depName,
                     modulePath: depInfo.path,
-                    reason: 'dependent',
+                    reason: BUILD_REASON.DEPENDENT,
                     dependedBy: [module.moduleName]
                 });
             }
             else if (depInfo &&
-                buildModulesMap.get(depName)?.reason === 'dependent') {
+                buildModulesMap.get(depName)?.reason === BUILD_REASON.DEPENDENT) {
                 // 如果已存在且是dependent，添加到dependedBy列表
                 const existing = buildModulesMap.get(depName);
                 if (!existing.dependedBy) {
@@ -165,7 +165,7 @@ function topologicalSort(modules, dependencyMap) {
         if (visited.has(moduleName))
             return;
         if (visiting.has(moduleName)) {
-            console.error(`检测到循环依赖: ${moduleName}`);
+            console.error(LOG_MESSAGES.CIRCULAR_DEPENDENCY.replace('{name}', moduleName));
             return;
         }
         visiting.add(moduleName);
@@ -196,15 +196,15 @@ function topologicalSort(modules, dependencyMap) {
  */
 function getBuildedModules() {
     const result = {};
-    console.error('🔍 开始分析需要编译的模块...\n');
+    console.error(LOG_MESSAGES.ANALYZE_START);
     // 任务一和任务二：遍历modulesInfosDetail对象
     Object.entries(modulesInfosDetail).forEach(([projectPath, modulesInfos]) => {
         if (modulesInfos.length === 0) {
-            console.error(`⏭️  项目 ${projectPath} 没有变更的模块，跳过\n`);
+            console.error(LOG_MESSAGES.NO_CHANGES_SKIP.replace('{path}', projectPath));
             return;
         }
-        console.error(`📂 项目路径: ${projectPath}`);
-        console.error(`📦 检测到 ${modulesInfos.length} 个变更的模块:`);
+        console.error(LOG_MESSAGES.PROJECT_PATH.replace('{path}', projectPath));
+        console.error(LOG_MESSAGES.MODULES_DETECTED.replace('{count}', String(modulesInfos.length)));
         modulesInfos.forEach((m) => {
             console.error(`   - ${m.moduleName}`);
         });
@@ -213,11 +213,11 @@ function getBuildedModules() {
             // 获取该项目所有包的依赖信息
             const dependencyMap = getAllPackageDependencies(projectPath);
             if (dependencyMap.size === 0) {
-                console.error(`⚠️  未找到任何包依赖信息，仅编译变更的模块`);
+                console.error(LOG_MESSAGES.NO_DEPENDENCY_INFO);
                 result[projectPath] = modulesInfos.map((m) => ({
                     moduleName: m.moduleName,
                     modulePath: m.modulePath,
-                    reason: 'changed'
+                    reason: BUILD_REASON.CHANGED
                 }));
             }
             else {
@@ -226,11 +226,11 @@ function getBuildedModules() {
                 // 进行拓扑排序，确保编译顺序正确
                 const sortedModules = topologicalSort(modulesToBuild, dependencyMap);
                 result[projectPath] = sortedModules;
-                console.error(`\n✅ 共需编译 ${sortedModules.length} 个模块（包含依赖）:`);
+                console.error(LOG_MESSAGES.BUILD_TOTAL.replace('{count}', String(sortedModules.length)));
                 sortedModules.forEach((m, index) => {
-                    const reasonText = m.reason === 'changed'
+                    const reasonText = m.reason === BUILD_REASON.CHANGED
                         ? '直接变更'
-                        : `被依赖 (${m.dependedBy?.join(', ') ?? ''})`;
+                        : `被依赖 (${m.dependedBy?.join(SPECIAL_CHARS.COMMA + ' ') ?? ''})`;
                     console.error(`   ${index + 1}. ${m.moduleName} - ${reasonText}`);
                 });
             }
@@ -241,10 +241,12 @@ function getBuildedModules() {
             result[projectPath] = modulesInfos.map((m) => ({
                 moduleName: m.moduleName,
                 modulePath: m.modulePath,
-                reason: 'changed'
+                reason: BUILD_REASON.CHANGED
             }));
         }
-        console.error('\n' + '='.repeat(80) + '\n');
+        console.error(SPECIAL_CHARS.NEWLINE +
+            SPECIAL_CHARS.SEPARATOR.repeat(80) +
+            SPECIAL_CHARS.NEWLINE);
     });
     return result;
 }
@@ -282,7 +284,7 @@ function executeCallback(value) {
     isReady = value;
     // 只有当状态变为 true 时，才触发回调
     if (value) {
-        console.error('✅ 所有模块编译完成，触发回调...');
+        console.error(LOG_MESSAGES.ALL_MODULES_READY);
         try {
             callback();
         }
@@ -299,27 +301,27 @@ function executeCallback(value) {
  */
 export function buildModules() {
     if (!isReady) {
-        console.error('⚠️  isReady 为 false，跳过编译操作');
+        console.error(LOG_MESSAGES.READY_FALSE_SKIP);
         return false;
     }
     const modules = getCachedBuildModules();
     if (modules.length === 0) {
-        console.error('ℹ️  没有需要编译的模块');
+        console.error(LOG_MESSAGES.NO_MODULES_TO_BUILD);
         return true;
     }
-    console.error(`\n🔨 开始编译 ${modules.length} 个模块...\n`);
+    console.error(LOG_MESSAGES.BUILD_START.replace('{count}', String(modules.length)));
     modules.forEach((module, index) => {
-        const reasonText = module.reason === 'changed'
+        const reasonText = module.reason === BUILD_REASON.CHANGED
             ? '直接变更'
-            : `被依赖 (${module.dependedBy?.join(', ') ?? ''})`;
+            : `被依赖 (${module.dependedBy?.join(SPECIAL_CHARS.COMMA + ' ') ?? ''})`;
         console.error(`[${index + 1}/${modules.length}] 编译模块: ${module.moduleName}`);
         console.error(`   路径: ${module.modulePath}`);
         console.error(`   原因: ${reasonText}`);
         // TODO: 在这里添加实际的编译逻辑
         // 例如：执行 pnpm build 或其他构建命令
-        console.error(`   ✅ 编译完成\n`);
+        console.error(`   ✅ 编译完成${SPECIAL_CHARS.NEWLINE}`);
     });
-    console.error('🎉 所有模块编译完成！\n');
+    console.error(LOG_MESSAGES.BUILD_COMPLETE);
     return true;
 }
 /**
@@ -327,12 +329,12 @@ export function buildModules() {
  * 自动注册 isReady 监听，当变为 true 时执行编译
  */
 export function initListener() {
-    console.error('📡 初始化编译监听器...');
+    console.error(LOG_MESSAGES.INIT_LISTENER);
     callback = () => {
-        console.error('🔔 检测到 isReady 变为 true，开始执行编译...');
+        console.error(LOG_MESSAGES.READY_TRIGGER);
         buildModules();
     };
-    console.error('✅ 编译监听器初始化完成\n');
+    console.error(LOG_MESSAGES.LISTENER_READY);
 }
 // 模块加载时自动初始化监听器
 initListener();

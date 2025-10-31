@@ -1,4 +1,4 @@
-import type { ProjectConfig } from './types/get-configuration.ts'
+import type { ProjectConfig } from './types/get-configuration.js'
 import { ENV_VARS, SPECIAL_CHARS } from './consts/index.js'
 
 /**

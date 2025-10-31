@@ -1,3 +1,4 @@
+import { ENV_VARS, SPECIAL_CHARS } from './consts/index.js';
 /**
  * 解析环境变量为字符串数组，支持多种格式
  * @param envValue 环境变量值
@@ -17,7 +18,8 @@ function parseEnvArray(envValue) {
         return [];
     }
     // 尝试作为 JSON 数组解析
-    if (trimmedValue.startsWith('[') && trimmedValue.endsWith(']')) {
+    if (trimmedValue.startsWith(SPECIAL_CHARS.BRACKET_LEFT) &&
+        trimmedValue.endsWith(SPECIAL_CHARS.BRACKET_RIGHT)) {
         try {
             const parsed = JSON.parse(trimmedValue);
             if (Array.isArray(parsed)) {
@@ -29,9 +31,9 @@ function parseEnvArray(envValue) {
         }
     }
     // 尝试作为逗号分隔的字符串解析
-    if (trimmedValue.includes(',')) {
+    if (trimmedValue.includes(SPECIAL_CHARS.COMMA)) {
         return trimmedValue
-            .split(',')
+            .split(SPECIAL_CHARS.COMMA)
             .map((item) => item.trim())
             .filter((item) => item !== '');
     }
@@ -42,8 +44,8 @@ function parseEnvArray(envValue) {
  * 从命令行参数或配置文件读取配置
  */
 export function getConfiguration() {
-    const projectPatchsEnv = process.env.PROJECT_PATCHS;
-    const modulePathsEnv = process.env.MODULE_PATHS;
+    const projectPatchsEnv = process.env[ENV_VARS.PROJECT_PATCHS];
+    const modulePathsEnv = process.env[ENV_VARS.MODULE_PATHS];
     const config = {
         modulePaths: [],
         projectPaths: []
@@ -55,11 +57,11 @@ export function getConfiguration() {
                 try {
                     config.modulePaths = parseEnvArray(modulePathsEnv);
                     if (config.modulePaths.length === 0) {
-                        console.warn('MODULE_PATHS 解析结果为空');
+                        console.error(`${ENV_VARS.MODULE_PATHS} 解析结果为空`);
                     }
                 }
                 catch (error) {
-                    console.error(`MODULE_PATHS 解析失败: ${error}`);
+                    console.error(`${ENV_VARS.MODULE_PATHS} 解析失败: ${error}`);
                     config.modulePaths = [];
                 }
             }
@@ -68,11 +70,11 @@ export function getConfiguration() {
                 try {
                     config.projectPaths = parseEnvArray(projectPatchsEnv);
                     if (config.projectPaths.length === 0) {
-                        console.warn('PROJECT_PATCHS 解析结果为空');
+                        console.error(`${ENV_VARS.PROJECT_PATCHS} 解析结果为空`);
                     }
                 }
                 catch (error) {
-                    console.error(`PROJECT_PATCHS 解析失败: ${error}`);
+                    console.error(`${ENV_VARS.PROJECT_PATCHS} 解析失败: ${error}`);
                     config.projectPaths = [];
                 }
             }
@@ -86,17 +88,17 @@ export function getConfiguration() {
         }
     }
     // 尝试从旧格式的 PROJECT_CONFIG 环境变量读取（向后兼容）
-    const configEnv = process.env.PROJECT_CONFIG;
+    const configEnv = process.env[ENV_VARS.PROJECT_CONFIG];
     if (configEnv) {
         try {
             return JSON.parse(configEnv);
         }
         catch (error) {
-            console.error(`PROJECT_CONFIG 环境变量解析失败: ${error}`);
+            console.error(`${ENV_VARS.PROJECT_CONFIG} 环境变量解析失败: ${error}`);
         }
     }
     // 返回默认配置
-    console.warn('未找到有效的项目配置，返回空配置');
+    console.error('未找到有效的项目配置，返回空配置');
     return config;
 }
 /**

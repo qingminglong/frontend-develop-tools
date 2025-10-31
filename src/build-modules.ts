@@ -3,11 +3,11 @@ import path from 'path'
 import fs from 'fs'
 import { glob } from 'glob'
 import yaml from 'js-yaml'
-import type { ModuleInfo } from './types/detect-changed-modules.ts'
+import type { ModuleInfo } from './types/detect-changed-modules.js'
 import type {
   PackageDependencyInfo,
   BuildedModule
-} from './types/build-modules.ts'
+} from './types/build-modules.js'
 import {
   FILE_NAMES,
   ENCODINGS,
