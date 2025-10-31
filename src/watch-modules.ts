@@ -16,6 +16,7 @@ import yaml from 'js-yaml'
 import fs from 'fs'
 import { glob } from 'glob'
 import { detectAndCacheChangedModules } from './detect-changed-modules.js'
+import { getAllBuildedModules } from './build-modules.js'
 
 // 类型定义
 interface WorkspacePackage {
@@ -235,18 +236,21 @@ export function watchModulesWithPath(modulePath: string): FSWatcher {
       logChange(info)
       // 调用公用函数检测并缓存变更的模块
       detectAndCacheChangedModules(modulePath)
+      getAllBuildedModules()
     })
     .on('change', (filePath: string) => {
       const info = formatChangeInfo('change', filePath, packages, modulePath)
       logChange(info)
       // 调用公用函数检测并缓存变更的模块
       detectAndCacheChangedModules(modulePath)
+      getAllBuildedModules()
     })
     .on('unlink', (filePath: string) => {
       const info = formatChangeInfo('unlink', filePath, packages, modulePath)
       logChange(info)
       // 调用公用函数检测并缓存变更的模块
       detectAndCacheChangedModules(modulePath)
+      getAllBuildedModules()
     })
     .on('error', (error: unknown) => {
       console.error(`❌ 监控错误: ${error}`)

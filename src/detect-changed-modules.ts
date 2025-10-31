@@ -8,7 +8,6 @@ import { glob } from 'glob'
 export interface ModuleInfo {
   moduleName: string
   modulePath: string
-  dependenciesModuleNames: string[] // 依赖当前模块的其他模块名称列表
 }
 
 // 按项目路径缓存模块信息详情
@@ -124,54 +123,6 @@ function getPackageName(packageJsonPath: string): string | null {
 }
 
 /**
- * 从package.json中读取dependencies和devDependencies
- * @param packageJsonPath - package.json文件路径
- * @returns dependencies和devDependencies的所有key（去重）
- */
-function getPackageDependencies(packageJsonPath: string): string[] {
-  try {
-    const content = fs.readFileSync(packageJsonPath, 'utf8')
-    const pkg = JSON.parse(content)
-    const dependencies = pkg.dependencies || {}
-    const devDependencies = pkg.devDependencies || {}
-
-    // 合并并去重
-    const allDependencies = new Set([
-      ...Object.keys(dependencies),
-      ...Object.keys(devDependencies)
-    ])
-
-    return Array.from(allDependencies)
-  } catch (error) {
-    return []
-  }
-}
-
-/**
- * 查找哪些模块依赖了指定的模块
- * @param targetModuleName - 目标模块名称
- * @param packages - 所有工作区包列表
- * @returns 依赖目标模块的模块名称数组
- */
-function findDependentModules(
-  targetModuleName: string,
-  packages: WorkspacePackage[]
-): string[] {
-  const dependentModules: string[] = []
-
-  packages.forEach((pkg) => {
-    const dependencies = getPackageDependencies(pkg.packageJsonPath)
-    if (dependencies.includes(targetModuleName)) {
-      const pkgName = getPackageName(pkg.packageJsonPath)
-      if (pkgName && pkgName !== targetModuleName) {
-        dependentModules.push(pkgName)
-      }
-    }
-  })
-
-  return dependentModules
-}
-/**
  * 分析受影响的模块
  * @param changedFiles - 变更文件列表
  * @param packages - 工作区包列表
@@ -198,13 +149,9 @@ function analyzeChangedModules(
       // 读取package.json获取name
       const packageName = getPackageName(matchedPackage.packageJsonPath)
       if (packageName && !affectedModulesMap.has(packageName)) {
-        // 查找依赖当前模块的其他模块
-        const dependentModules = findDependentModules(packageName, packages)
-
         affectedModulesMap.set(packageName, {
           moduleName: packageName,
-          modulePath: matchedPackage.path,
-          dependenciesModuleNames: dependentModules
+          modulePath: matchedPackage.path
         })
       }
     }
@@ -249,11 +196,6 @@ export function detectAndCacheChangedModules(modulePath: string): ModuleInfo[] {
   console.error(`📦 检测到 ${affectedModules.length} 个模块发生变更:`)
   affectedModules.forEach((m) => {
     console.error(`   - ${m.moduleName} (${m.modulePath})`)
-    if (m.dependenciesModuleNames.length > 0) {
-      console.error(
-        `     依赖此模块的: ${m.dependenciesModuleNames.join(', ')}`
-      )
-    }
   })
 
   return modulesInfosDetail[modulePath]

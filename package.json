@@ -1,21 +1,17 @@
 {
-  "name": "ui-config-server",
+  "name": "frontend-develop-tools",
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
   "bin": {
-    "ui-config-server": "build/index.js"
+    "frontend-develop-tools": "build/index.js"
   },
   "files": [
     "build"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc && chmod 755 build/index.js",
-    "debug": "node build/index.js",
-    "watch": "node src/watch-modules.js",
-    "watch:frontend": "node src/watch-modules.js /home/git/frontend",
-    "test:watch": "./test-watch.sh"
+    "debug": "node build/index.js"
   },
   "keywords": [],
   "author": "",
