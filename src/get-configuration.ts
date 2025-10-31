@@ -1,4 +1,4 @@
-import type { ProjectConfig } from './types/get-configuration.js'
+import type { ProjectConfig } from './types/get-configuration.ts'
 
 /**
  * 解析环境变量为字符串数组，支持多种格式

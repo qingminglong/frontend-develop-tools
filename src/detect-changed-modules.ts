@@ -7,7 +7,7 @@ import type {
   ModuleInfo,
   WorkspacePackage,
   WorkspaceConfig
-} from './types/detect-changed-modules.js'
+} from './types/detect-changed-modules.ts'
 
 // 按项目路径缓存模块信息详情
 export const modulesInfosDetail: Record<string, ModuleInfo[]> = {}
