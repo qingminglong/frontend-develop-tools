@@ -13,7 +13,7 @@ import type {
   ChangeInfo,
   EventType,
   EventNameType
-} from './types/watch-modules.js'
+} from '../types/watch-modules.js'
 import {
   FILE_NAMES,
   ENCODINGS,
@@ -27,7 +27,7 @@ import {
   LOCALES,
   LOG_MESSAGES,
   ERROR_MESSAGES
-} from './consts/index.js'
+} from '../consts/index.js'
 
 // 创建防抖版本的 getAllBuildedModules 函数，间隔 1 秒
 const debouncedGetAllBuildedModules = debounce(() => {

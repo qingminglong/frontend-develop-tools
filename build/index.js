@@ -3,9 +3,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 // 导入 StdioServerTransport 类，用于处理服务器的输入输出通信
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import * as fs from 'fs';
-import { configuration } from './get-configuration.js';
-import { startWatchingModules } from './start-watch.js';
-import { stopWatchingModules } from './stop-watch.js';
+import { configuration } from './domain/get-configuration.js';
+import { startWatchingModules } from './domain/start-watch.js';
+import { stopWatchingModules } from './domain/stop-watch.js';
 /**
  * 全局监控器存储
  */

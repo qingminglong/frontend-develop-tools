@@ -10,9 +10,9 @@ import axios from 'axios'
 import * as fs from 'fs'
 import * as path from 'path'
 import type { FSWatcher } from 'chokidar'
-import { configuration } from './get-configuration.js'
-import { startWatchingModules } from './start-watch.js'
-import { stopWatchingModules } from './stop-watch.js'
+import { configuration } from './domain/get-configuration.js'
+import { startWatchingModules } from './domain/start-watch.js'
+import { stopWatchingModules } from './domain/stop-watch.js'
 
 /**
  * 全局监控器存储

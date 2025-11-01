@@ -3,11 +3,11 @@ import path from 'path'
 import fs from 'fs'
 import { glob } from 'glob'
 import yaml from 'js-yaml'
-import type { ModuleInfo } from './types/detect-changed-modules.js'
+import type { ModuleInfo } from '../types/detect-changed-modules.js'
 import type {
   PackageDependencyInfo,
   BuildedModule
-} from './types/build-modules.js'
+} from '../types/build-modules.js'
 import {
   FILE_NAMES,
   ENCODINGS,
@@ -17,7 +17,7 @@ import {
   SPECIAL_CHARS,
   LOG_MESSAGES,
   ERROR_MESSAGES
-} from './consts/index.js'
+} from '../consts/index.js'
 
 /**
  * 全局变量：缓存所有需要编译的模块列表
