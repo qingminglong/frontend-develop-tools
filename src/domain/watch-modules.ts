@@ -4,7 +4,6 @@ import path from 'path'
 import yaml from 'js-yaml'
 import fs from 'fs'
 import { glob } from 'glob'
-import { debounce } from 'es-toolkit'
 import { detectAndCacheChangedModules } from './detect-changed-modules'
 import { getAllBuildedModules } from './build-modules'
 import type {
@@ -29,10 +28,122 @@ import {
   ERROR_MESSAGES
 } from '../consts/index'
 
-// 创建防抖版本的 getAllBuildedModules 函数，间隔 1 秒
-const debouncedGetAllBuildedModules = debounce(() => {
-  getAllBuildedModules()
-}, 2000)
+/**
+ * 任务管理器类
+ * 用于管理模块检测和构建任务，确保新任务触发时取消之前未完成的任务
+ */
+class TaskManager {
+  private abortController: AbortController | null = null
+  private isRunning = false
+
+  /**
+   * 执行任务，如果有正在运行的任务则先取消
+   * @param modulePath - 项目根目录路径
+   */
+  async executeTask(modulePath: string): Promise<void> {
+    // 如果有正在执行的任务，先取消它
+    if (this.isRunning && this.abortController) {
+      console.error('⚠️  检测到新的文件变更，取消之前的任务...')
+      this.abortController.abort()
+    }
+
+    // 创建新的 AbortController
+    this.abortController = new AbortController()
+    const signal = this.abortController.signal
+    this.isRunning = true
+
+    try {
+      // 检查是否已被取消
+      if (signal.aborted) {
+        console.error('❌ 任务已被取消')
+        return
+      }
+
+      // 执行检测变更模块的任务
+      await this.runWithAbort(
+        () => detectAndCacheChangedModules(modulePath),
+        signal
+      )
+
+      // 再次检查是否已被取消
+      if (signal.aborted) {
+        console.error('❌ 任务已被取消')
+        return
+      }
+
+      // 执行获取构建模块列表的任务
+      await this.runWithAbort(() => getAllBuildedModules(), signal)
+
+      console.error('✅ 任务执行完成')
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('❌ 任务被中断')
+      } else {
+        console.error('❌ 任务执行出错:', error)
+      }
+    } finally {
+      this.isRunning = false
+      this.abortController = null
+    }
+  }
+
+  /**
+   * 在支持中断的环境中运行函数
+   * @param fn - 要执行的函数
+   * @param signal - 中断信号
+   */
+  private async runWithAbort<T>(fn: () => T, signal: AbortSignal): Promise<T> {
+    return new Promise((resolve, reject) => {
+      // 如果已经被取消，立即拒绝
+      if (signal.aborted) {
+        const error = new Error('Task was aborted')
+        error.name = 'AbortError'
+        reject(error)
+        return
+      }
+
+      // 监听中断信号
+      const abortHandler = () => {
+        const error = new Error('Task was aborted')
+        error.name = 'AbortError'
+        reject(error)
+      }
+
+      signal.addEventListener('abort', abortHandler)
+
+      // 使用 setTimeout 让出执行权，使任务可以被中断
+      setTimeout(() => {
+        try {
+          if (signal.aborted) {
+            const error = new Error('Task was aborted')
+            error.name = 'AbortError'
+            reject(error)
+            return
+          }
+
+          const result = fn()
+          signal.removeEventListener('abort', abortHandler)
+          resolve(result)
+        } catch (error) {
+          signal.removeEventListener('abort', abortHandler)
+          reject(error)
+        }
+      }, 0)
+    })
+  }
+
+  /**
+   * 取消当前正在执行的任务
+   */
+  cancelCurrentTask(): void {
+    if (this.isRunning && this.abortController) {
+      this.abortController.abort()
+    }
+  }
+}
+
+// 创建全局任务管理器实例
+const taskManager = new TaskManager()
 
 /**
  * 读取pnpm-workspace.yaml配置
@@ -217,10 +328,12 @@ export function watchModulesWithPath(modulePath: string): FSWatcher {
         modulePath
       )
       logChange(info)
-      // 调用公用函数检测并缓存变更的模块
-      detectAndCacheChangedModules(modulePath)
-      // 使用防抖版本，避免频繁调用
-      debouncedGetAllBuildedModules()
+      // 使用任务管理器执行任务，自动取消之前未完成的任务
+      taskManager.executeTask(modulePath).catch((error) => {
+        if (error?.name !== 'AbortError') {
+          console.error('任务执行失败:', error)
+        }
+      })
     })
     .on(FILE_EVENTS.CHANGE, (filePath: string) => {
       const info = formatChangeInfo(
@@ -230,10 +343,12 @@ export function watchModulesWithPath(modulePath: string): FSWatcher {
         modulePath
       )
       logChange(info)
-      // 调用公用函数检测并缓存变更的模块
-      detectAndCacheChangedModules(modulePath)
-      // 使用防抖版本，避免频繁调用
-      debouncedGetAllBuildedModules()
+      // 使用任务管理器执行任务，自动取消之前未完成的任务
+      taskManager.executeTask(modulePath).catch((error) => {
+        if (error?.name !== 'AbortError') {
+          console.error('任务执行失败:', error)
+        }
+      })
     })
     .on(FILE_EVENTS.UNLINK, (filePath: string) => {
       const info = formatChangeInfo(
@@ -243,10 +358,12 @@ export function watchModulesWithPath(modulePath: string): FSWatcher {
         modulePath
       )
       logChange(info)
-      // 调用公用函数检测并缓存变更的模块
-      detectAndCacheChangedModules(modulePath)
-      // 使用防抖版本，避免频繁调用
-      debouncedGetAllBuildedModules()
+      // 使用任务管理器执行任务，自动取消之前未完成的任务
+      taskManager.executeTask(modulePath).catch((error) => {
+        if (error?.name !== 'AbortError') {
+          console.error('任务执行失败:', error)
+        }
+      })
     })
     .on('error', (error: unknown) => {
       console.error(LOG_MESSAGES.WATCH_ERROR.replace('{error}', String(error)))
