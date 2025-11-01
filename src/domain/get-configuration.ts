@@ -1,5 +1,5 @@
-import type { ProjectConfig } from '../types/get-configuration'
-import { ENV_VARS, SPECIAL_CHARS } from '../consts/index'
+import type { ProjectConfig } from '../types/get-configuration.ts'
+import { ENV_VARS, SPECIAL_CHARS } from '../consts/index.ts'
 
 /**
  * 解析环境变量为字符串数组，支持多种格式

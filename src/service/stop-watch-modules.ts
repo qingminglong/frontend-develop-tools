@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { FSWatcher } from 'chokidar'
-import { stopWatchingModules } from '../domain/stop-watch'
+import { stopWatchingModules } from '../domain/stop-watch.ts'
 
 /**
  * 注册停止模块监控工具

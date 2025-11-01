@@ -1,7 +1,7 @@
-import { watchModulesWithPath } from './watch-modules'
-import { configuration } from './get-configuration'
+import { watchModulesWithPath } from './watch-modules.ts'
+import { configuration } from './get-configuration.ts'
 import type { FSWatcher } from 'chokidar'
-import { ERROR_MESSAGES, WATCHER_STATUS } from '../consts/index'
+import { ERROR_MESSAGES, WATCHER_STATUS } from '../consts/index.ts'
 
 /**
  * 启动模块监控

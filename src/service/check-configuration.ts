@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import * as fs from 'fs'
-import { configuration } from '../domain/get-configuration'
+import { configuration } from '../domain/get-configuration.ts'
 
 /**
  * 注册检查配置路径工具

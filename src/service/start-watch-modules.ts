@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { FSWatcher } from 'chokidar'
-import { configuration } from '../domain/get-configuration'
-import { startWatchingModules } from '../domain/start-watch'
+import { configuration } from '../domain/get-configuration.ts'
+import { startWatchingModules } from '../domain/start-watch.ts'
 
 /**
  * 注册启动模块监控工具

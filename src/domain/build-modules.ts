@@ -1,13 +1,14 @@
-import { modulesInfosDetail } from './detect-changed-modules'
+import { modulesInfosDetail } from './detect-changed-modules.ts'
+import { execSync } from 'child_process'
 import path from 'path'
 import fs from 'fs'
 import { glob } from 'glob'
 import yaml from 'js-yaml'
-import type { ModuleInfo } from '../types/detect-changed-modules'
+import type { ModuleInfo } from '../types/detect-changed-modules.ts'
 import type {
   PackageDependencyInfo,
   BuildedModule
-} from '../types/build-modules'
+} from '../types/build-modules.ts'
 import {
   FILE_NAMES,
   ENCODINGS,
@@ -16,7 +17,7 @@ import {
   BUILD_REASON,
   SPECIAL_CHARS,
   LOG_MESSAGES
-} from '../consts/index'
+} from '../consts/index.ts'
 
 /**
  * 全局变量：缓存所有需要编译的模块列表
@@ -372,14 +373,14 @@ export function getAllBuildedModules(): BuildedModule[] {
   // 调用前清空缓存
   cachedBuildModules = []
   // 重置编译完成状态
-  updateStatus(false)
+  isFinished = false
 
   const buildedModules = getBuildedModules()
   const modules = Object.values(buildedModules).flat()
 
   // 更新缓存
   cachedBuildModules = modules
-  updateStatus(true)
+  isFinished = true
   return modules
 }
 
@@ -389,25 +390,6 @@ export function getAllBuildedModules(): BuildedModule[] {
  */
 function getCachedBuildModules(): BuildedModule[] {
   return cachedBuildModules
-}
-
-/**
- * 设置 isReady 状态
- * 当状态变为 true 时，会触发所有注册的回调函数
- * @param value - 新的状态值
- */
-function updateStatus(value: boolean): void {
-  isFinished = value
-
-  // 只有当状态变为 true 时，才触发回调
-  if (value) {
-    console.error(LOG_MESSAGES.ALL_MODULES_READY)
-    try {
-      buildModules()
-    } catch (error) {
-      console.error('执行编译完成回调时出错:', error)
-    }
-  }
 }
 
 /**
@@ -433,6 +415,9 @@ export function buildModules(): boolean {
     LOG_MESSAGES.BUILD_START.replace('{count}', String(modules.length))
   )
 
+  let successCount = 0
+  let failCount = 0
+
   modules.forEach((module, index) => {
     const reasonText =
       module.reason === BUILD_REASON.CHANGED
@@ -445,13 +430,45 @@ export function buildModules(): boolean {
     console.error(`   路径: ${module.modulePath}`)
     console.error(`   原因: ${reasonText}`)
 
-    // TODO: 在这里添加实际的编译逻辑
-    // 例如：执行 pnpm build 或其他构建命令
+    try {
+      // 执行 pnpm run build 命令
+      console.error(`   🔨 执行编译命令: pnpm run build`)
 
-    console.error(`   ✅ 编译完成${SPECIAL_CHARS.NEWLINE}`)
+      const startTime = Date.now()
+
+      execSync('pnpm run build', {
+        cwd: module.modulePath,
+        stdio: 'inherit', // 将编译输出直接显示在控制台
+        encoding: 'utf8',
+        timeout: 600000 // 5分钟超时
+      })
+
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2)
+      console.error(
+        `   ✅ 编译成功 (耗时: ${duration}s)${SPECIAL_CHARS.NEWLINE}`
+      )
+      successCount++
+    } catch (error) {
+      console.error(
+        `   ❌ 编译失败:`,
+        error instanceof Error ? error.message : error
+      )
+      console.error(SPECIAL_CHARS.NEWLINE)
+      failCount++
+    }
   })
 
-  console.error(LOG_MESSAGES.BUILD_COMPLETE)
+  console.error(`\n📊 编译统计:`)
+  console.error(`   ✅ 成功: ${successCount}`)
+  console.error(`   ❌ 失败: ${failCount}`)
+  console.error(`   📦 总计: ${modules.length}\n`)
 
+  // 根据编译结果返回状态
+  if (failCount > 0) {
+    console.error(`❌ 编译完成，但有 ${failCount} 个模块编译失败`)
+    return false
+  }
+
+  console.error(LOG_MESSAGES.BUILD_COMPLETE)
   return true
 }

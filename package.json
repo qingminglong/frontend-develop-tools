@@ -21,7 +21,7 @@
     }
   },
   "scripts": {
-    "build": "tsc && chmod 755 build/index.js",
+    "build": "vite build && tsc && chmod 755 build/index.js",
     "debug": "node build/index.js"
   },
   "keywords": [],

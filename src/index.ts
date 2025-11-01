@@ -5,8 +5,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
 import type { FSWatcher } from 'chokidar'
-import { startWatchingModules } from './domain/start-watch'
-import { stopWatchingModules } from './domain/stop-watch'
+import { startWatchingModules } from './domain/start-watch.ts'
+import { stopWatchingModules } from './domain/stop-watch.ts'
 
 // 导入所有服务注册函数
 import {
@@ -14,8 +14,9 @@ import {
   registerCheckConfiguration,
   registerStartWatchModules,
   registerStopWatchModules,
-  registerGetWatchStatus
-} from './service/index'
+  registerGetWatchStatus,
+  registerBuildModules
+} from './service/index.ts'
 
 /**
  * 全局监控器存储
@@ -44,6 +45,7 @@ if (autoWatcher !== 'false') {
 registerGetConfiguration(server)
 registerCheckConfiguration(server)
 registerGetWatchStatus(server, watchers)
+registerBuildModules(server)
 
 // 只有在手动模式下才注册启动/停止监控工具
 if (autoWatcher === 'false') {

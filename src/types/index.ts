@@ -2,17 +2,17 @@
  * 统一导出所有类型定义
  */
 
-export type { PackageDependencyInfo, BuildedModule } from './build-modules'
+export type { PackageDependencyInfo, BuildedModule } from './build-modules.ts'
 export type {
   ModuleInfo,
   WorkspacePackage as DetectWorkspacePackage,
   WorkspaceConfig as DetectWorkspaceConfig
-} from './detect-changed-modules'
-export type { ProjectConfig } from './get-configuration'
+} from './detect-changed-modules.ts'
+export type { ProjectConfig } from './get-configuration.ts'
 export type {
   WorkspacePackage as WatchWorkspacePackage,
   WorkspaceConfig as WatchWorkspaceConfig,
   ChangeInfo,
   EventType,
   EventNameType
-} from './watch-modules'
+} from './watch-modules.ts'

@@ -4,15 +4,15 @@ import path from 'path'
 import yaml from 'js-yaml'
 import fs from 'fs'
 import { glob } from 'glob'
-import { detectAndCacheChangedModules } from './detect-changed-modules'
-import { getAllBuildedModules } from './build-modules'
+import { detectAndCacheChangedModules } from './detect-changed-modules.ts'
+import { getAllBuildedModules } from './build-modules.ts'
 import type {
   WorkspacePackage,
   WorkspaceConfig,
   ChangeInfo,
   EventType,
   EventNameType
-} from '../types/watch-modules'
+} from '../types/watch-modules.ts'
 import {
   FILE_NAMES,
   ENCODINGS,
@@ -26,7 +26,7 @@ import {
   LOCALES,
   LOG_MESSAGES,
   ERROR_MESSAGES
-} from '../consts/index'
+} from '../consts/index.ts'
 
 /**
  * 任务管理器类
