@@ -32,7 +32,7 @@ let isFinished = false
 /**
  * 读取package.json并获取依赖信息
  * @param packageJsonPath - package.json文件路径
- * @returns 包依赖信息
+ * @returns 包依赖信息，如果没有build脚本则返回null
  */
 function getPackageDependencies(packageJsonPath: string): {
   name: string
@@ -41,6 +41,17 @@ function getPackageDependencies(packageJsonPath: string): {
   try {
     const content = fs.readFileSync(packageJsonPath, ENCODINGS.UTF8)
     const pkg = JSON.parse(content)
+
+    // 检查是否存在 scripts.build，不存在则排除该模块
+    if (!pkg.scripts || !pkg.scripts.build) {
+      console.error(
+        `跳过模块 ${
+          pkg[PACKAGE_FIELDS.NAME] || '未知'
+        }: 缺少 scripts.build 配置`
+      )
+      return null
+    }
+
     const dependencies = new Set<string>()
 
     // 收集所有类型的依赖

@@ -19,7 +19,6 @@ export const PACKAGE_FIELDS = {
     NAME: 'name',
     DEPENDENCIES: 'dependencies',
     DEV_DEPENDENCIES: 'devDependencies',
-    PEER_DEPENDENCIES: 'peerDependencies',
     PACKAGES: 'packages'
 };
 /**
@@ -27,8 +26,7 @@ export const PACKAGE_FIELDS = {
  */
 export const DEPENDENCY_TYPES = [
     PACKAGE_FIELDS.DEPENDENCIES,
-    PACKAGE_FIELDS.DEV_DEPENDENCIES,
-    PACKAGE_FIELDS.PEER_DEPENDENCIES
+    PACKAGE_FIELDS.DEV_DEPENDENCIES
 ];
 /**
  * Git 命令常量
