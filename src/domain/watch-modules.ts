@@ -5,15 +5,15 @@ import yaml from 'js-yaml'
 import fs from 'fs'
 import { glob } from 'glob'
 import { debounce } from 'es-toolkit'
-import { detectAndCacheChangedModules } from './detect-changed-modules.js'
-import { getAllBuildedModules } from './build-modules.js'
+import { detectAndCacheChangedModules } from './detect-changed-modules'
+import { getAllBuildedModules } from './build-modules'
 import type {
   WorkspacePackage,
   WorkspaceConfig,
   ChangeInfo,
   EventType,
   EventNameType
-} from '../types/watch-modules.js'
+} from '../types/watch-modules'
 import {
   FILE_NAMES,
   ENCODINGS,
@@ -27,7 +27,7 @@ import {
   LOCALES,
   LOG_MESSAGES,
   ERROR_MESSAGES
-} from '../consts/index.js'
+} from '../consts/index'
 
 // 创建防抖版本的 getAllBuildedModules 函数，间隔 1 秒
 const debouncedGetAllBuildedModules = debounce(() => {

@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { FSWatcher } from 'chokidar'
-import { configuration } from '../domain/get-configuration.js'
+import { configuration } from '../domain/get-configuration'
 
 /**
  * 注册获取监控状态工具

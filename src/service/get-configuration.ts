@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { configuration } from '../domain/get-configuration.js'
+import { configuration } from '../domain/get-configuration'
 
 /**
  * 注册获取配置信息工具

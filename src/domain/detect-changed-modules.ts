@@ -7,7 +7,7 @@ import type {
   ModuleInfo,
   WorkspacePackage,
   WorkspaceConfig
-} from '../types/detect-changed-modules.js'
+} from '../types/detect-changed-modules'
 import {
   FILE_NAMES,
   ENCODINGS,
@@ -16,7 +16,7 @@ import {
   SPECIAL_CHARS,
   ERROR_MESSAGES,
   LOG_MESSAGES
-} from '../consts/index.js'
+} from '../consts/index'
 
 // 按项目路径缓存模块信息详情
 export const modulesInfosDetail: Record<string, ModuleInfo[]> = {}

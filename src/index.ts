@@ -5,8 +5,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
 import type { FSWatcher } from 'chokidar'
-import { startWatchingModules } from './domain/start-watch.js'
-import { stopWatchingModules } from './domain/stop-watch.js'
+import { startWatchingModules } from './domain/start-watch'
+import { stopWatchingModules } from './domain/stop-watch'
 
 // 导入所有服务注册函数
 import {
@@ -15,7 +15,7 @@ import {
   registerStartWatchModules,
   registerStopWatchModules,
   registerGetWatchStatus
-} from './service/index.js'
+} from './service/index'
 
 /**
  * 全局监控器存储

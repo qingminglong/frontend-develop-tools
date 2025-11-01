@@ -39,6 +39,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "*",
     "typescript": "5.4.2",
     "vite": "5.4.11",
