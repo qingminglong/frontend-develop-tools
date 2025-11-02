@@ -1,5 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { buildModules } from '../domain/build-modules.ts'
+import {
+  BUILD_MODULES_SERVICE_MESSAGES,
+  ERROR_MESSAGES
+} from '../consts/index.ts'
 
 /**
  * 全局互斥标志位：标识是否有编译操作正在执行
@@ -23,7 +27,9 @@ export function registerBuildModules(server: McpServer): void {
       try {
         // 检查是否有编译操作正在执行
         if (isBuildingInProgress) {
-          console.error('⚠️  有编译操作正在执行，请等待上次编译完成再尝试')
+          console.error(
+            BUILD_MODULES_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING
+          )
           return {
             content: [
               {
@@ -31,7 +37,8 @@ export function registerBuildModules(server: McpServer): void {
                 text: JSON.stringify(
                   {
                     success: false,
-                    message: '有编译操作正在执行，请等待上次编译完成再尝试'
+                    message:
+                      BUILD_MODULES_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
                   },
                   null,
                   2
@@ -43,14 +50,16 @@ export function registerBuildModules(server: McpServer): void {
 
         // 设置互斥标志位
         isBuildingInProgress = true
-        console.error('🔨 开始执行构建任务...')
+        console.error(BUILD_MODULES_SERVICE_MESSAGES.TASK_START)
 
         return await new Promise((resolve) => {
           setTimeout(() => {
             const result = buildModules()
 
             console.error(
-              result ? '✅ 构建任务执行成功' : '❌ 构建任务执行失败'
+              result
+                ? BUILD_MODULES_SERVICE_MESSAGES.TASK_SUCCESS_LOG
+                : BUILD_MODULES_SERVICE_MESSAGES.TASK_FAILED_LOG
             )
 
             resolve({
@@ -60,7 +69,9 @@ export function registerBuildModules(server: McpServer): void {
                   text: JSON.stringify(
                     {
                       success: result,
-                      message: result ? '构建任务执行成功' : '构建任务执行失败'
+                      message: result
+                        ? BUILD_MODULES_SERVICE_MESSAGES.TASK_SUCCESS
+                        : BUILD_MODULES_SERVICE_MESSAGES.TASK_FAILED
                     },
                     null,
                     2
@@ -71,12 +82,14 @@ export function registerBuildModules(server: McpServer): void {
           }, 0)
         })
       } catch (e) {
-        console.error('❌ 构建任务执行出错:', e)
+        console.error(BUILD_MODULES_SERVICE_MESSAGES.TASK_ERROR, e)
         return {
           content: [
             {
               type: 'text',
-              text: `Error: ${e instanceof Error ? e.message : 'Unknown error'}`
+              text: `${BUILD_MODULES_SERVICE_MESSAGES.ERROR_PREFIX}${
+                e instanceof Error ? e.message : ERROR_MESSAGES.UNKNOWN_ERROR
+              }`
             }
           ],
           isError: true
@@ -84,7 +97,7 @@ export function registerBuildModules(server: McpServer): void {
       } finally {
         // 无论成功还是失败，都重置互斥标志位
         isBuildingInProgress = false
-        console.error('🏁 构建任务结束，释放互斥锁')
+        console.error(BUILD_MODULES_SERVICE_MESSAGES.TASK_END)
       }
     }
   )

@@ -1,5 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { syncModifyCode } from '../domain/sync-modify-code.ts'
+import {
+  SYNC_MODIFY_CODE_SERVICE_MESSAGES,
+  ERROR_MESSAGES
+} from '../consts/index.ts'
 
 /**
  * 全局互斥标志位：标识是否有同步修改代码操作正在执行
@@ -23,7 +27,9 @@ export function registerSyncModifyCode(server: McpServer): void {
       try {
         // 检查是否有同步修改操作正在执行
         if (isSyncModifyingInProgress) {
-          console.error('⚠️  有同步修改操作正在执行，请等待上次操作完成再尝试')
+          console.error(
+            SYNC_MODIFY_CODE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING
+          )
           return {
             content: [
               {
@@ -31,7 +37,8 @@ export function registerSyncModifyCode(server: McpServer): void {
                 text: JSON.stringify(
                   {
                     success: false,
-                    message: '有同步修改操作正在执行，请等待上次操作完成再尝试'
+                    message:
+                      SYNC_MODIFY_CODE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
                   },
                   null,
                   2
@@ -43,7 +50,7 @@ export function registerSyncModifyCode(server: McpServer): void {
 
         // 设置互斥标志位
         isSyncModifyingInProgress = true
-        console.error('🔄 开始执行同步修改代码任务...')
+        console.error(SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_START)
 
         return await new Promise((resolve) => {
           setTimeout(() => {
@@ -52,8 +59,8 @@ export function registerSyncModifyCode(server: McpServer): void {
 
             console.error(
               result
-                ? '✅ 同步修改代码任务执行成功'
-                : '❌ 同步修改代码任务执行失败'
+                ? SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_SUCCESS_LOG
+                : SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_FAILED_LOG
             )
 
             resolve({
@@ -64,8 +71,8 @@ export function registerSyncModifyCode(server: McpServer): void {
                     {
                       success: result,
                       message: result
-                        ? '同步修改代码任务执行成功'
-                        : '同步修改代码任务执行失败'
+                        ? SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_SUCCESS
+                        : SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_FAILED
                     },
                     null,
                     2
@@ -76,12 +83,14 @@ export function registerSyncModifyCode(server: McpServer): void {
           }, 0)
         })
       } catch (e) {
-        console.error('❌ 同步修改代码任务执行出错:', e)
+        console.error(SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_ERROR, e)
         return {
           content: [
             {
               type: 'text',
-              text: `Error: ${e instanceof Error ? e.message : 'Unknown error'}`
+              text: `${SYNC_MODIFY_CODE_SERVICE_MESSAGES.ERROR_PREFIX}${
+                e instanceof Error ? e.message : ERROR_MESSAGES.UNKNOWN_ERROR
+              }`
             }
           ],
           isError: true
@@ -89,7 +98,7 @@ export function registerSyncModifyCode(server: McpServer): void {
       } finally {
         // 无论成功还是失败，都重置互斥标志位
         isSyncModifyingInProgress = false
-        console.error('🏁 同步修改代码任务结束，释放互斥锁')
+        console.error(SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_END)
       }
     }
   )

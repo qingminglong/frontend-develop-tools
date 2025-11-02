@@ -284,3 +284,47 @@ export const SYNC_MODIFY_MESSAGES = {
   SYNC_MODIFY_SUCCESS: '✅ 同步修改代码成功',
   SYNC_MODIFY_ERROR: '❌ 同步修改代码执行异常:'
 } as const
+
+/**
+ * 同步修改代码服务层消息常量
+ */
+export const SYNC_MODIFY_CODE_SERVICE_MESSAGES = {
+  // 互斥控制相关
+  OPERATION_IN_PROGRESS_WARNING:
+    '⚠️  有同步修改操作正在执行，请等待上次操作完成再尝试',
+  OPERATION_IN_PROGRESS: '有同步修改操作正在执行，请等待上次操作完成再尝试',
+
+  // 任务执行相关
+  TASK_START: '🔄 开始执行同步修改代码任务...',
+  TASK_SUCCESS_LOG: '✅ 同步修改代码任务执行成功',
+  TASK_FAILED_LOG: '❌ 同步修改代码任务执行失败',
+  TASK_SUCCESS: '同步修改代码任务执行成功',
+  TASK_FAILED: '同步修改代码任务执行失败',
+  TASK_ERROR: '❌ 同步修改代码任务执行出错:',
+  TASK_END: '🏁 同步修改代码任务结束，释放互斥锁',
+
+  // 错误消息前缀
+  ERROR_PREFIX: 'Error: '
+} as const
+
+/**
+ * 构建模块服务层消息常量
+ */
+export const BUILD_MODULES_SERVICE_MESSAGES = {
+  // 互斥控制相关
+  OPERATION_IN_PROGRESS_WARNING:
+    '⚠️  有编译操作正在执行，请等待上次编译完成再尝试',
+  OPERATION_IN_PROGRESS: '有编译操作正在执行，请等待上次编译完成再尝试',
+
+  // 任务执行相关
+  TASK_START: '🔨 开始执行构建任务...',
+  TASK_SUCCESS_LOG: '✅ 构建任务执行成功',
+  TASK_FAILED_LOG: '❌ 构建任务执行失败',
+  TASK_SUCCESS: '构建任务执行成功',
+  TASK_FAILED: '构建任务执行失败',
+  TASK_ERROR: '❌ 构建任务执行出错:',
+  TASK_END: '🏁 构建任务结束，释放互斥锁',
+
+  // 错误消息前缀
+  ERROR_PREFIX: 'Error: '
+} as const
