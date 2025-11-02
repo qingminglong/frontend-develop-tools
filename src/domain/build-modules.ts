@@ -382,7 +382,7 @@ export function getAllBuildedModules(): BuildedModule[] {
  * 获取缓存的编译模块列表
  * @returns 缓存的模块列表
  */
-function getCachedBuildModules(): BuildedModule[] {
+export function getCachedBuildModules(): BuildedModule[] {
   return cachedBuildModules
 }
 
