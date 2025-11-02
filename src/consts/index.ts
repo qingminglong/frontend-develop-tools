@@ -200,6 +200,14 @@ export const NODE_DIRS = {
 export const BUILD_OUTPUT_DIRS = ['dist', 'es', 'lib'] as const
 
 /**
+ * UMD 相关目录常量
+ */
+export const UMD_DIRS = {
+  UMD_DIR: 'umd',
+  DIST_DIR: 'dist'
+} as const
+
+/**
  * 包管理器命令常量
  */
 export const PACKAGE_MANAGER_COMMANDS = {
@@ -252,6 +260,19 @@ export const SYNC_MODIFY_MESSAGES = {
   STAT_MODULES: '   📦 模块: {count}',
   STAT_PROJECTS: '   📂 项目: {count}\n',
   SYNC_FILES_FAILED: '❌ 同步编译文件失败:',
+
+  // UMD 文件同步相关
+  UMD_SYNC_START: '\n🔍 检查 UMD 文件...',
+  UMD_DIR_NOT_FOUND: '   ℹ️  模块 {moduleName} 没有 UMD 目录，跳过',
+  UMD_DIR_FOUND: '   ✓ 找到 UMD 目录: {path}',
+  UMD_FILES_FOUND: '   📦 找到 {count} 个 UMD 文件',
+  UMD_FILE_ITEM: '      - {fileName}',
+  UMD_SEARCHING_FILE: '   🔍 搜索文件: {fileName} 在项目 {projectPath}',
+  UMD_FILE_MATCHED: '      ✓ 匹配到: {filePath}',
+  UMD_FILE_COPIED: '      ✅ 已拷贝到: {destPath}',
+  UMD_FILE_COPY_FAILED: '      ❌ 拷贝失败:',
+  UMD_NO_MATCH: '      ℹ️  未找到匹配的文件',
+  UMD_SYNC_SUMMARY: '\n   📊 UMD 同步统计: 拷贝了 {count} 个文件',
 
   // 主流程相关
   SYNC_MODIFY_START: '🔄 开始同步修改代码...',

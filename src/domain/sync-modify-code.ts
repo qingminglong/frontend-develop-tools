@@ -5,7 +5,8 @@ import {
   NODE_DIRS,
   BUILD_OUTPUT_DIRS,
   PACKAGE_MANAGER_COMMANDS,
-  SYNC_MODIFY_MESSAGES
+  SYNC_MODIFY_MESSAGES,
+  UMD_DIRS
 } from '../consts/index.ts'
 import { execSync } from 'child_process'
 import fs from 'fs'
@@ -181,6 +182,161 @@ function copyDirectory(srcDir: string, destDir: string): void {
 }
 
 /**
+ * 递归查找指定文件名的所有匹配文件
+ * @param dir - 搜索目录
+ * @param fileName - 要查找的文件名
+ * @param results - 存储结果的数组
+ * @returns 匹配的文件路径数组
+ */
+function findFilesRecursively(
+  dir: string,
+  fileName: string,
+  results: string[] = []
+): string[] {
+  try {
+    // 检查目录是否存在
+    if (!fs.existsSync(dir)) {
+      return results
+    }
+
+    const entries = fs.readdirSync(dir, { withFileTypes: true })
+
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name)
+
+      // 跳过 node_modules 目录
+      if (entry.name === NODE_DIRS.NODE_MODULES) {
+        continue
+      }
+
+      if (entry.isDirectory()) {
+        // 递归搜索子目录
+        findFilesRecursively(fullPath, fileName, results)
+      } else if (entry.isFile() && entry.name === fileName) {
+        // 找到匹配的文件
+        results.push(fullPath)
+      }
+    }
+  } catch (error) {
+    // 忽略无权限访问的目录
+  }
+
+  return results
+}
+
+/**
+ * 同步 UMD 文件到项目中的匹配位置
+ * @param modulePath - 模块路径
+ * @param moduleName - 模块名称
+ * @param projectPaths - 项目路径列表
+ * @returns 拷贝的文件数量
+ */
+function syncUmdFiles(
+  modulePath: string,
+  moduleName: string,
+  projectPaths: string[]
+): number {
+  let copiedCount = 0
+
+  try {
+    // 1. 检查 dist/umd 目录是否存在
+    const umdDir = path.join(modulePath, UMD_DIRS.DIST_DIR, UMD_DIRS.UMD_DIR)
+
+    if (!fs.existsSync(umdDir)) {
+      logToChat(
+        formatMessage(SYNC_MODIFY_MESSAGES.UMD_DIR_NOT_FOUND, { moduleName })
+      )
+      return 0
+    }
+
+    logToChat(
+      formatMessage(SYNC_MODIFY_MESSAGES.UMD_DIR_FOUND, { path: umdDir })
+    )
+
+    // 2. 获取 umd 目录下的所有 .js 文件
+    const umdFiles = fs
+      .readdirSync(umdDir)
+      .filter(
+        (file) =>
+          file.endsWith('.js') && fs.statSync(path.join(umdDir, file)).isFile()
+      )
+
+    if (umdFiles.length === 0) {
+      return 0
+    }
+
+    logToChat(
+      formatMessage(SYNC_MODIFY_MESSAGES.UMD_FILES_FOUND, {
+        count: umdFiles.length
+      })
+    )
+    umdFiles.forEach((file) =>
+      logToChat(
+        formatMessage(SYNC_MODIFY_MESSAGES.UMD_FILE_ITEM, { fileName: file })
+      )
+    )
+
+    // 3. 遍历每个 UMD 文件
+    for (const umdFile of umdFiles) {
+      const srcFilePath = path.join(umdDir, umdFile)
+
+      // 4. 在每个项目路径中搜索同名文件
+      for (const projectPath of projectPaths) {
+        logToChat(
+          formatMessage(SYNC_MODIFY_MESSAGES.UMD_SEARCHING_FILE, {
+            fileName: umdFile,
+            projectPath
+          })
+        )
+
+        const matchedFiles = findFilesRecursively(projectPath, umdFile)
+
+        if (matchedFiles.length === 0) {
+          logToChat(SYNC_MODIFY_MESSAGES.UMD_NO_MATCH)
+          continue
+        }
+
+        // 5. 拷贝到每个匹配的文件所在目录
+        for (const matchedFile of matchedFiles) {
+          const destDir = path.dirname(matchedFile)
+          const destPath = path.join(destDir, umdFile)
+
+          try {
+            logToChat(
+              formatMessage(SYNC_MODIFY_MESSAGES.UMD_FILE_MATCHED, {
+                filePath: matchedFile
+              })
+            )
+
+            fs.copyFileSync(srcFilePath, destPath)
+
+            logToChat(
+              formatMessage(SYNC_MODIFY_MESSAGES.UMD_FILE_COPIED, {
+                destPath
+              })
+            )
+
+            copiedCount++
+          } catch (error) {
+            logToChat(
+              SYNC_MODIFY_MESSAGES.UMD_FILE_COPY_FAILED,
+              error instanceof Error ? error.message : String(error)
+            )
+          }
+        }
+      }
+    }
+  } catch (error) {
+    logToChat(
+      SYNC_MODIFY_MESSAGES.UMD_FILE_COPY_FAILED,
+      error instanceof Error ? error.message : String(error)
+    )
+  }
+
+  return copiedCount
+}
+
+/**
  * 同步编译后的文件到项目依赖中
  * @returns 是否成功
  */
@@ -244,6 +400,7 @@ function syncCompiledFiles(): boolean {
 
     let syncCount = 0
     let skipCount = 0
+    let totalUmdCopied = 0
 
     for (const module of buildedModules) {
       logToChat(
@@ -318,6 +475,23 @@ function syncCompiledFiles(): boolean {
           skipCount++
         }
       }
+
+      // 5. 同步 UMD 文件到项目中的匹配位置
+      logToChat(SYNC_MODIFY_MESSAGES.UMD_SYNC_START)
+      const umdCopiedCount = syncUmdFiles(
+        module.modulePath,
+        module.moduleName,
+        projectPaths
+      )
+
+      if (umdCopiedCount > 0) {
+        logToChat(
+          formatMessage(SYNC_MODIFY_MESSAGES.UMD_SYNC_SUMMARY, {
+            count: umdCopiedCount
+          })
+        )
+        totalUmdCopied += umdCopiedCount
+      }
     }
 
     logToChat(SYNC_MODIFY_MESSAGES.SYNC_STATISTICS)
@@ -337,6 +511,13 @@ function syncCompiledFiles(): boolean {
         count: projectPaths.length
       })
     )
+    if (totalUmdCopied > 0) {
+      logToChat(
+        formatMessage(SYNC_MODIFY_MESSAGES.UMD_SYNC_SUMMARY, {
+          count: totalUmdCopied
+        })
+      )
+    }
 
     return true
   } catch (error) {
