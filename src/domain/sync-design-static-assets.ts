@@ -1,4 +1,7 @@
-import { buildModules, getCachedBuildModules } from './build-modules.ts'
+import {
+  buildStaticModules,
+  getCachedStaticBuildModules
+} from './build-modules.ts'
 import { configuration } from './get-configuration.ts'
 import { logToChat } from '../utils/index.ts'
 import {
@@ -7,7 +10,8 @@ import {
   PACKAGE_MANAGER_COMMANDS,
   SYNC_MODIFY_MESSAGES,
   UMD_DIRS,
-  UMD_SKIP_CHECK_FILES
+  UMD_SKIP_CHECK_FILES,
+  SYNC_DESIGN_ASSETS_MESSAGES
 } from '../consts/index.ts'
 import { execSync } from 'child_process'
 import fs from 'fs'
@@ -400,10 +404,10 @@ function syncUmdFiles(
 }
 
 /**
- * 同步编译后的文件到项目依赖中
+ * 同步编译后的静态资源文件到项目依赖中
  * @returns 是否成功
  */
-function syncCompiledFiles(): boolean {
+function syncStaticCompiledFiles(): boolean {
   try {
     logToChat(SYNC_MODIFY_MESSAGES.SYNC_START)
 
@@ -437,8 +441,8 @@ function syncCompiledFiles(): boolean {
       }
     }
 
-    // 3. 获取需要同步的模块列表
-    const buildedModules = getCachedBuildModules()
+    // 3. 获取需要同步的模块列表（使用 getCachedStaticBuildModules）
+    const buildedModules = getCachedStaticBuildModules()
 
     if (buildedModules.length === 0) {
       logToChat(SYNC_MODIFY_MESSAGES.NO_MODULES_TO_SYNC)
@@ -615,35 +619,35 @@ function syncCompiledFiles(): boolean {
 }
 
 /**
- * 同步修改代码
- * 在代码修改后同步执行构建任务并同步编译后的文件
- * @returns 同步修改是否成功执行
+ * 同步设计态静态资源文件
+ * 将模块路径中的静态资源构建并同步到项目路径中对应的目录
+ * @returns 是否成功
  */
-export function syncModifyCode(): boolean {
+export function syncDesignStaticAssets(): boolean {
   try {
-    logToChat(SYNC_MODIFY_MESSAGES.SYNC_MODIFY_START)
+    logToChat(SYNC_DESIGN_ASSETS_MESSAGES.SYNC_START)
 
-    // 调用 buildModules 执行构建
-    const buildResult = buildModules()
+    // 调用 buildStaticModules 执行构建
+    const buildResult = buildStaticModules()
 
     if (!buildResult) {
-      logToChat(SYNC_MODIFY_MESSAGES.BUILD_FAILED)
+      logToChat(SYNC_DESIGN_ASSETS_MESSAGES.SYNC_FAILED, '构建过程出现错误')
       return false
     }
 
     // 同步编译后的文件
-    const syncResult = syncCompiledFiles()
+    const syncResult = syncStaticCompiledFiles()
 
     if (!syncResult) {
-      logToChat(SYNC_MODIFY_MESSAGES.FILE_SYNC_FAILED)
+      logToChat(SYNC_DESIGN_ASSETS_MESSAGES.SYNC_FAILED, '文件同步出现错误')
       return false
     }
 
-    logToChat(SYNC_MODIFY_MESSAGES.SYNC_MODIFY_SUCCESS)
+    logToChat(SYNC_DESIGN_ASSETS_MESSAGES.SYNC_SUCCESS)
     return true
   } catch (error) {
     logToChat(
-      SYNC_MODIFY_MESSAGES.SYNC_MODIFY_ERROR,
+      SYNC_DESIGN_ASSETS_MESSAGES.SYNC_ERROR,
       error instanceof Error ? error.message : String(error)
     )
     return false

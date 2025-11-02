@@ -1,4 +1,5 @@
 import { modulesInfosDetail } from './detect-changed-modules.ts'
+import { configuration } from './get-configuration.ts'
 import { execSync } from 'child_process'
 import path from 'path'
 import fs from 'fs'
@@ -29,6 +30,11 @@ let cachedBuildModules: BuildedModule[] = []
  * 全局变量：标识所有模块是否已经编译完成
  */
 let isFinished = false
+
+/**
+ * 全局变量：缓存所有需要编译的静态资源模块列表
+ */
+let cachedStaticBuildModules: BuildedModule[] = []
 
 /**
  * 读取package.json并获取依赖信息
@@ -431,6 +437,159 @@ export function buildModules(): boolean {
         stdio: 'inherit', // 将编译输出直接显示在控制台
         encoding: 'utf8',
         timeout: 600000 // 5分钟超时
+      })
+
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2)
+      logToChat(`   ✅ 编译成功 (耗时: ${duration}s)${SPECIAL_CHARS.NEWLINE}`)
+      successCount++
+    } catch (error) {
+      logToChat(
+        `   ❌ 编译失败:`,
+        error instanceof Error ? error.message : error
+      )
+      logToChat(SPECIAL_CHARS.NEWLINE)
+      failCount++
+    }
+  })
+
+  logToChat(`\n📊 编译统计:`)
+  logToChat(`   ✅ 成功: ${successCount}`)
+  logToChat(`   ❌ 失败: ${failCount}`)
+  logToChat(`   📦 总计: ${modules.length}\n`)
+
+  // 根据编译结果返回状态
+  if (failCount > 0) {
+    logToChat(`❌ 编译完成，但有 ${failCount} 个模块编译失败`)
+    return false
+  }
+
+  logToChat(LOG_MESSAGES.BUILD_COMPLETE)
+  return true
+}
+
+/**
+ * 获取静态资源构建模块列表
+ * 从configuration.modulePaths中读取模块路径，检查package.json中是否包含build脚本
+ * 结果会被缓存到 cachedStaticBuildModules
+ * @returns 需要编译的静态模块列表
+ */
+export function getStaticBuildModules(): BuildedModule[] {
+  // 清空缓存
+  cachedStaticBuildModules = []
+
+  const staticBuildedModules: BuildedModule[] = []
+
+  logToChat('🔍 开始分析静态资源模块...')
+
+  // 获取配置中的模块路径
+  const { modulePaths } = configuration
+
+  if (!modulePaths || modulePaths.length === 0) {
+    logToChat('⚠️ 配置中未找到模块路径 (modulePaths)')
+    return staticBuildedModules
+  }
+
+  logToChat(`📦 找到 ${modulePaths.length} 个模块路径`)
+
+  // 遍历每个模块路径
+  modulePaths.forEach((modulePath) => {
+    try {
+      const packageJsonPath = path.join(modulePath, FILE_NAMES.PACKAGE_JSON)
+
+      // 检查package.json是否存在
+      if (!fs.existsSync(packageJsonPath)) {
+        logToChat(`   ⚠️ 跳过 ${modulePath}: 未找到 package.json`)
+        return
+      }
+
+      // 读取并解析package.json
+      const content = fs.readFileSync(packageJsonPath, ENCODINGS.UTF8)
+      const pkg = JSON.parse(content)
+
+      // 检查是否存在scripts.build
+      if (!pkg.scripts || !pkg.scripts.build) {
+        logToChat(
+          `   ⚠️ 跳过 ${
+            pkg[PACKAGE_FIELDS.NAME] || modulePath
+          }: 缺少 scripts.build 配置`
+        )
+        return
+      }
+
+      // 添加到构建列表
+      const moduleName = pkg[PACKAGE_FIELDS.NAME] || path.basename(modulePath)
+      staticBuildedModules.push({
+        moduleName,
+        modulePath,
+        reason: BUILD_REASON.CHANGED
+      })
+
+      logToChat(`   ✅ 添加模块: ${moduleName}`)
+    } catch (error) {
+      logToChat(
+        `   ❌ 处理模块 ${modulePath} 时出错:`,
+        error instanceof Error ? error.message : String(error)
+      )
+    }
+  })
+
+  logToChat(
+    `\n📊 静态资源模块分析完成: 共 ${staticBuildedModules.length} 个模块需要构建\n`
+  )
+
+  // 更新缓存
+  cachedStaticBuildModules = staticBuildedModules
+
+  return staticBuildedModules
+}
+
+/**
+ * 获取缓存的静态资源构建模块列表
+ * @returns 缓存的静态模块列表
+ */
+export function getCachedStaticBuildModules(): BuildedModule[] {
+  return cachedStaticBuildModules
+}
+
+/**
+ * 执行静态资源模块编译
+ * 调用getStaticBuildModules获取模块列表并执行编译
+ * @returns 编译是否成功执行
+ */
+export function buildStaticModules(): boolean {
+  const modules = getStaticBuildModules()
+
+  if (modules.length === 0) {
+    logToChat(LOG_MESSAGES.NO_MODULES_TO_BUILD)
+    return true
+  }
+
+  logToChat(LOG_MESSAGES.BUILD_START.replace('{count}', String(modules.length)))
+
+  let successCount = 0
+  let failCount = 0
+
+  modules.forEach((module, index) => {
+    const reasonText =
+      module.reason === BUILD_REASON.CHANGED
+        ? '直接变更'
+        : `被依赖 (${module.dependedBy?.join(SPECIAL_CHARS.COMMA + ' ') ?? ''})`
+
+    logToChat(`[${index + 1}/${modules.length}] 编译模块: ${module.moduleName}`)
+    logToChat(`   路径: ${module.modulePath}`)
+    logToChat(`   原因: ${reasonText}`)
+
+    try {
+      // 执行 pnpm run build 命令
+      logToChat(`   🔨 执行编译命令: pnpm run build:umd`)
+
+      const startTime = Date.now()
+
+      execSync('pnpm run build:umd', {
+        cwd: module.modulePath,
+        stdio: 'inherit', // 将编译输出直接显示在控制台
+        encoding: 'utf8',
+        timeout: 600000 // 10分钟超时
       })
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2)
