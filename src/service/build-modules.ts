@@ -62,23 +62,34 @@ export function registerBuildModules(server: McpServer): void {
                 : BUILD_MODULES_SERVICE_MESSAGES.TASK_FAILED_LOG
             )
 
-            resolve({
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify(
-                    {
-                      success: result,
-                      message: result
-                        ? BUILD_MODULES_SERVICE_MESSAGES.TASK_SUCCESS
-                        : BUILD_MODULES_SERVICE_MESSAGES.TASK_FAILED
-                    },
-                    null,
-                    2
-                  )
-                }
-              ]
-            })
+            // 如果执行失败，使用 isError: true 标记，让 Cursor 直接显示错误消息
+            if (!result) {
+              resolve({
+                content: [
+                  {
+                    type: 'text',
+                    text: BUILD_MODULES_SERVICE_MESSAGES.TASK_FAILED
+                  }
+                ],
+                isError: true
+              })
+            } else {
+              resolve({
+                content: [
+                  {
+                    type: 'text',
+                    text: JSON.stringify(
+                      {
+                        success: true,
+                        message: BUILD_MODULES_SERVICE_MESSAGES.TASK_SUCCESS
+                      },
+                      null,
+                      2
+                    )
+                  }
+                ]
+              })
+            }
           }, 0)
         })
       } catch (e) {
