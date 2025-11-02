@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { syncModifyCode } from '../domain/sync-modify-code.ts'
+import { clearLogBuffer, flushLogBuffer } from '../utils/index.ts'
 import {
   SYNC_MODIFY_CODE_SERVICE_MESSAGES,
   ERROR_MESSAGES
@@ -52,6 +53,9 @@ export function registerSyncModifyCode(server: McpServer): void {
         isSyncModifyingInProgress = true
         console.error(SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_START)
 
+        // 清空日志缓冲区，准备收集新的日志
+        clearLogBuffer()
+
         return await new Promise((resolve) => {
           setTimeout(() => {
             // 调用 domain 中的 syncModifyCode 方法
@@ -63,18 +67,25 @@ export function registerSyncModifyCode(server: McpServer): void {
                 : SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_FAILED_LOG
             )
 
-            // 如果执行失败，使用 isError: true 标记，让 Cursor 直接显示错误消息
+            // 如果执行失败，使用 isError: true 标记，并包含详细的日志信息
             if (!result) {
+              const detailedLogs = flushLogBuffer()
+              const errorMessage = detailedLogs
+                ? `${SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
+                : `${SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
+
               resolve({
                 content: [
                   {
                     type: 'text',
-                    text: SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_FAILED
+                    text: errorMessage
                   }
                 ],
                 isError: true
               })
             } else {
+              // 成功时清空日志缓冲区
+              flushLogBuffer()
               resolve({
                 content: [
                   {
@@ -95,13 +106,18 @@ export function registerSyncModifyCode(server: McpServer): void {
         })
       } catch (e) {
         console.error(SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_ERROR, e)
+        const detailedLogs = flushLogBuffer()
+        const errorMsg =
+          e instanceof Error ? e.message : ERROR_MESSAGES.UNKNOWN_ERROR
+        const fullErrorMessage = detailedLogs
+          ? `${SYNC_MODIFY_CODE_SERVICE_MESSAGES.ERROR_PREFIX}${errorMsg}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
+          : `${SYNC_MODIFY_CODE_SERVICE_MESSAGES.ERROR_PREFIX}${errorMsg}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
+
         return {
           content: [
             {
               type: 'text',
-              text: `${SYNC_MODIFY_CODE_SERVICE_MESSAGES.ERROR_PREFIX}${
-                e instanceof Error ? e.message : ERROR_MESSAGES.UNKNOWN_ERROR
-              }`
+              text: fullErrorMessage
             }
           ],
           isError: true
