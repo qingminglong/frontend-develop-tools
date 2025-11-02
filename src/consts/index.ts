@@ -269,10 +269,13 @@ export const SYNC_MODIFY_MESSAGES = {
   UMD_FILE_ITEM: '      - {fileName}',
   UMD_SEARCHING_FILE: '   🔍 搜索文件: {fileName} 在项目 {projectPath}',
   UMD_FILE_MATCHED: '      ✓ 匹配到: {filePath}',
-  UMD_FILE_COPIED: '      ✅ 已拷贝到: {destPath}',
-  UMD_FILE_COPY_FAILED: '      ❌ 拷贝失败:',
   UMD_NO_MATCH: '      ℹ️  未找到匹配的文件',
-  UMD_SYNC_SUMMARY: '\n   📊 UMD 同步统计: 拷贝了 {count} 个文件',
+  UMD_COPYING_ALL_FILES:
+    '   📋 准备拷贝 {count} 个文件到 {targetCount} 个目标目录',
+  UMD_DIR_COPIED: '      ✅ 已拷贝 {count} 个文件到: {destPath}',
+  UMD_FILE_COPY_FAILED: '         ❌ 文件 {fileName} 拷贝失败:',
+  UMD_DIR_COPY_FAILED: '      ❌ 目录 {path} 拷贝失败:',
+  UMD_SYNC_SUMMARY: '   📊 UMD 同步统计: 拷贝到 {count} 个目录',
 
   // 主流程相关
   SYNC_MODIFY_START: '🔄 开始同步修改代码...',

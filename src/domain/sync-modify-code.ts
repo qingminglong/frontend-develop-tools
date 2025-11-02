@@ -229,14 +229,14 @@ function findFilesRecursively(
  * @param modulePath - 模块路径
  * @param moduleName - 模块名称
  * @param projectPaths - 项目路径列表
- * @returns 拷贝的文件数量
+ * @returns 拷贝的目录数量
  */
 function syncUmdFiles(
   modulePath: string,
   moduleName: string,
   projectPaths: string[]
 ): number {
-  let copiedCount = 0
+  let copiedDirCount = 0
 
   try {
     // 1. 检查 dist/umd 目录是否存在
@@ -253,76 +253,114 @@ function syncUmdFiles(
       formatMessage(SYNC_MODIFY_MESSAGES.UMD_DIR_FOUND, { path: umdDir })
     )
 
-    // 2. 获取 umd 目录下的所有 .js 文件
-    const umdFiles = fs
-      .readdirSync(umdDir)
-      .filter(
-        (file) =>
-          file.endsWith('.js') && fs.statSync(path.join(umdDir, file)).isFile()
-      )
+    // 2. 获取 umd 目录下的所有文件（用于统计和展示）
+    const allUmdFiles = fs.readdirSync(umdDir).filter((file) => {
+      const filePath = path.join(umdDir, file)
+      return fs.statSync(filePath).isFile()
+    })
 
-    if (umdFiles.length === 0) {
+    if (allUmdFiles.length === 0) {
+      return 0
+    }
+
+    // 3. 获取 umd 目录下的 .js 文件（用于匹配）
+    const umdJsFiles = allUmdFiles.filter((file) => file.endsWith('.js'))
+
+    if (umdJsFiles.length === 0) {
       return 0
     }
 
     logToChat(
       formatMessage(SYNC_MODIFY_MESSAGES.UMD_FILES_FOUND, {
-        count: umdFiles.length
+        count: allUmdFiles.length
       })
     )
-    umdFiles.forEach((file) =>
+    allUmdFiles.forEach((file) =>
       logToChat(
         formatMessage(SYNC_MODIFY_MESSAGES.UMD_FILE_ITEM, { fileName: file })
       )
     )
 
-    // 3. 遍历每个 UMD 文件
-    for (const umdFile of umdFiles) {
-      const srcFilePath = path.join(umdDir, umdFile)
+    // 4. 收集所有需要拷贝的目标目录（去重）
+    const targetDirs = new Set<string>()
 
-      // 4. 在每个项目路径中搜索同名文件
+    for (const umdJsFile of umdJsFiles) {
+      // 5. 在每个项目路径中搜索同名 js 文件
       for (const projectPath of projectPaths) {
         logToChat(
           formatMessage(SYNC_MODIFY_MESSAGES.UMD_SEARCHING_FILE, {
-            fileName: umdFile,
+            fileName: umdJsFile,
             projectPath
           })
         )
 
-        const matchedFiles = findFilesRecursively(projectPath, umdFile)
+        const matchedFiles = findFilesRecursively(projectPath, umdJsFile)
 
         if (matchedFiles.length === 0) {
           logToChat(SYNC_MODIFY_MESSAGES.UMD_NO_MATCH)
           continue
         }
 
-        // 5. 拷贝到每个匹配的文件所在目录
+        // 6. 将匹配文件的目录加入待拷贝列表
         for (const matchedFile of matchedFiles) {
           const destDir = path.dirname(matchedFile)
-          const destPath = path.join(destDir, umdFile)
+          targetDirs.add(destDir)
+          logToChat(
+            formatMessage(SYNC_MODIFY_MESSAGES.UMD_FILE_MATCHED, {
+              filePath: matchedFile
+            })
+          )
+        }
+      }
+    }
 
-          try {
-            logToChat(
-              formatMessage(SYNC_MODIFY_MESSAGES.UMD_FILE_MATCHED, {
-                filePath: matchedFile
-              })
-            )
+    // 7. 将 umd 目录下的所有文件拷贝到每个目标目录
+    if (targetDirs.size > 0) {
+      logToChat(
+        formatMessage(SYNC_MODIFY_MESSAGES.UMD_COPYING_ALL_FILES, {
+          count: allUmdFiles.length,
+          targetCount: targetDirs.size
+        })
+      )
 
-            fs.copyFileSync(srcFilePath, destPath)
+      for (const targetDir of targetDirs) {
+        try {
+          let filescopied = 0
 
-            logToChat(
-              formatMessage(SYNC_MODIFY_MESSAGES.UMD_FILE_COPIED, {
-                destPath
-              })
-            )
+          // 拷贝 umd 目录下的所有文件
+          for (const fileName of allUmdFiles) {
+            const srcFilePath = path.join(umdDir, fileName)
+            const destFilePath = path.join(targetDir, fileName)
 
-            copiedCount++
-          } catch (error) {
-            logToChat(
-              SYNC_MODIFY_MESSAGES.UMD_FILE_COPY_FAILED,
-              error instanceof Error ? error.message : String(error)
-            )
+            try {
+              fs.copyFileSync(srcFilePath, destFilePath)
+              filescopied++
+            } catch (error) {
+              logToChat(
+                formatMessage(SYNC_MODIFY_MESSAGES.UMD_FILE_COPY_FAILED, {
+                  fileName
+                }),
+                error instanceof Error ? error.message : String(error)
+              )
+            }
           }
+
+          if (filescopied > 0) {
+            logToChat(
+              formatMessage(SYNC_MODIFY_MESSAGES.UMD_DIR_COPIED, {
+                destPath: targetDir,
+                count: filescopied
+              })
+            )
+            copiedDirCount++
+          }
+        } catch (error) {
+          logToChat(
+            formatMessage(SYNC_MODIFY_MESSAGES.UMD_DIR_COPY_FAILED, {
+              path: targetDir
+            }),
+            error instanceof Error ? error.message : String(error)
+          )
         }
       }
     }
@@ -333,7 +371,7 @@ function syncUmdFiles(
     )
   }
 
-  return copiedCount
+  return copiedDirCount
 }
 
 /**
