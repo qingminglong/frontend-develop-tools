@@ -185,3 +185,78 @@ export const LOG_MESSAGES = {
 export const LOCALES = {
   ZH_CN: 'zh-CN'
 } as const
+
+/**
+ * Node.js 依赖管理相关目录常量
+ */
+export const NODE_DIRS = {
+  NODE_MODULES: 'node_modules',
+  PNPM_DIR: '.pnpm'
+} as const
+
+/**
+ * 编译输出目录常量
+ */
+export const BUILD_OUTPUT_DIRS = ['dist', 'es', 'lib'] as const
+
+/**
+ * 包管理器命令常量
+ */
+export const PACKAGE_MANAGER_COMMANDS = {
+  PNPM_INSTALL: 'pnpm install'
+} as const
+
+/**
+ * 同步修改代码日志消息常量
+ */
+export const SYNC_MODIFY_MESSAGES = {
+  // 依赖检查相关
+  MISSING_DEPENDENCIES: '   📦 项目 {path} 缺少依赖，开始安装...',
+  DEPENDENCIES_INSTALLED: '   ✅ 依赖安装完成',
+  DEPENDENCIES_EXIST: '   ✓ 项目依赖已存在',
+  INSTALL_FAILED: '   ❌ 安装依赖失败:',
+
+  // 模块查找相关
+  PNPM_DIR_NOT_FOUND: '   ⚠️  未找到 .pnpm 目录: {path}',
+  SEARCHING_MODULE: '   🔍 查找模块: {moduleName} (搜索前缀: {prefix})',
+  PNPM_DIR_NOT_MATCHED: '   ⚠️  未找到匹配的 pnpm 目录，前缀: {prefix}',
+  PNPM_DIR_FOUND: '   ✓ 找到 pnpm 目录: {dir}',
+  TARGET_DIR_NOT_EXIST: '   ⚠️  目录不存在: {path}',
+  TARGET_PATH_FOUND: '   ✓ 目标路径: {path}',
+  FIND_MODULE_FAILED: '   ❌ 查找模块路径失败:',
+
+  // 拷贝相关
+  SOURCE_DIR_NOT_EXIST: '     ⚠️  源目录不存在: {path}',
+  COPYING_DIR: '     📁 拷贝 {dirName}...',
+  COPY_SUCCESS: '     ✅ {dirName} 拷贝成功',
+  COPY_FAILED: '     ❌ {dirName} 拷贝失败:',
+
+  // 同步流程相关
+  SYNC_START: '\n📦 开始同步编译后的文件...',
+  NO_PROJECT_PATHS: '⚠️  未配置项目路径',
+  PROJECT_LIST: '📂 项目列表 ({count}):',
+  PROJECT_ITEM: '   - {path}',
+  CHECK_DEPENDENCIES: '\n🔍 检查项目依赖...',
+  DEPENDENCY_CHECK_FAILED: '❌ 项目 {path} 依赖检查失败，跳过',
+  NO_MODULES_TO_SYNC: '\n⚠️  没有需要同步的模块',
+  MODULES_TO_SYNC: '\n📋 需要同步的模块 ({count}):',
+  MODULE_ITEM: '   - {moduleName}',
+  SYNC_FILES_START: '\n🔄 开始同步文件...\n',
+  PROCESSING_MODULE: '\n处理模块: {moduleName}',
+  SKIP_PROJECT: '   ⚠️  跳过项目: {path}',
+  SYNC_TO_PROJECT: '   ✅ 同步到项目: {path} ({count} 个目录)',
+  NO_DIRS_TO_COPY: '   ⚠️  没有可拷贝的目录: {path}',
+  SYNC_STATISTICS: '\n\n📊 同步统计:',
+  STAT_SUCCESS: '   ✅ 成功: {count}',
+  STAT_SKIPPED: '   ⚠️  跳过: {count}',
+  STAT_MODULES: '   📦 模块: {count}',
+  STAT_PROJECTS: '   📂 项目: {count}\n',
+  SYNC_FILES_FAILED: '❌ 同步编译文件失败:',
+
+  // 主流程相关
+  SYNC_MODIFY_START: '🔄 开始同步修改代码...',
+  BUILD_FAILED: '❌ 同步修改代码失败：构建过程出现错误',
+  FILE_SYNC_FAILED: '❌ 同步修改代码失败：文件同步出现错误',
+  SYNC_MODIFY_SUCCESS: '✅ 同步修改代码成功',
+  SYNC_MODIFY_ERROR: '❌ 同步修改代码执行异常:'
+} as const

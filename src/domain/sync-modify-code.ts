@@ -1,9 +1,28 @@
 import { buildModules, getCachedBuildModules } from './build-modules.ts'
 import { configuration } from './get-configuration.ts'
 import { logToChat } from '../utils/index.ts'
+import {
+  NODE_DIRS,
+  BUILD_OUTPUT_DIRS,
+  PACKAGE_MANAGER_COMMANDS,
+  SYNC_MODIFY_MESSAGES
+} from '../consts/index.ts'
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
+
+/**
+ * 替换消息模板中的占位符
+ * @param template - 消息模板
+ * @param params - 参数对象
+ * @returns 替换后的消息
+ */
+function formatMessage(
+  template: string,
+  params: Record<string, string | number>
+): string {
+  return template.replace(/\{(\w+)\}/g, (_, key) => String(params[key] ?? ''))
+}
 
 /**
  * 检查并安装项目依赖
@@ -12,28 +31,32 @@ import path from 'path'
  */
 function ensureProjectDependencies(projectPath: string): boolean {
   try {
-    const nodeModulesPath = path.join(projectPath, 'node_modules')
+    const nodeModulesPath = path.join(projectPath, NODE_DIRS.NODE_MODULES)
 
     // 检查 node_modules 是否存在且不为空
     if (
       !fs.existsSync(nodeModulesPath) ||
       fs.readdirSync(nodeModulesPath).length === 0
     ) {
-      logToChat(`   📦 项目 ${projectPath} 缺少依赖，开始安装...`)
-      execSync('pnpm install', {
+      logToChat(
+        formatMessage(SYNC_MODIFY_MESSAGES.MISSING_DEPENDENCIES, {
+          path: projectPath
+        })
+      )
+      execSync(PACKAGE_MANAGER_COMMANDS.PNPM_INSTALL, {
         cwd: projectPath,
         stdio: 'inherit',
         encoding: 'utf8'
       })
-      logToChat(`   ✅ 依赖安装完成`)
+      logToChat(SYNC_MODIFY_MESSAGES.DEPENDENCIES_INSTALLED)
       return true
     }
 
-    logToChat(`   ✓ 项目依赖已存在`)
+    logToChat(SYNC_MODIFY_MESSAGES.DEPENDENCIES_EXIST)
     return true
   } catch (error) {
     logToChat(
-      `   ❌ 安装依赖失败:`,
+      SYNC_MODIFY_MESSAGES.INSTALL_FAILED,
       error instanceof Error ? error.message : String(error)
     )
     return false
@@ -51,10 +74,14 @@ function findPnpmModulePath(
   moduleName: string
 ): string | null {
   try {
-    const pnpmPath = path.join(nodeModulesPath, '.pnpm')
+    const pnpmPath = path.join(nodeModulesPath, NODE_DIRS.PNPM_DIR)
 
     if (!fs.existsSync(pnpmPath)) {
-      logToChat(`   ⚠️  未找到 .pnpm 目录: ${pnpmPath}`)
+      logToChat(
+        formatMessage(SYNC_MODIFY_MESSAGES.PNPM_DIR_NOT_FOUND, {
+          path: pnpmPath
+        })
+      )
       return null
     }
 
@@ -62,7 +89,12 @@ function findPnpmModulePath(
     const moduleNames = moduleName.split('/')
     const projectModulesName = moduleNames.join('+')
 
-    logToChat(`   🔍 查找模块: ${moduleName} (搜索前缀: ${projectModulesName})`)
+    logToChat(
+      formatMessage(SYNC_MODIFY_MESSAGES.SEARCHING_MODULE, {
+        moduleName,
+        prefix: projectModulesName
+      })
+    )
 
     // 查找以 projectModulesName 为前缀的目录
     const pnpmDirs = fs.readdirSync(pnpmPath)
@@ -71,29 +103,43 @@ function findPnpmModulePath(
     )
 
     if (!matchedDir) {
-      logToChat(`   ⚠️  未找到匹配的 pnpm 目录，前缀: ${projectModulesName}`)
+      logToChat(
+        formatMessage(SYNC_MODIFY_MESSAGES.PNPM_DIR_NOT_MATCHED, {
+          prefix: projectModulesName
+        })
+      )
       return null
     }
 
-    logToChat(`   ✓ 找到 pnpm 目录: ${matchedDir}: ${projectModulesName}`)
+    logToChat(
+      formatMessage(SYNC_MODIFY_MESSAGES.PNPM_DIR_FOUND, { dir: matchedDir })
+    )
 
     // 构建目标路径: .pnpm/{matched}/node_modules/@scope/package-name
-    let targetPath = path.join(pnpmPath, matchedDir, 'node_modules')
+    let targetPath = path.join(pnpmPath, matchedDir, NODE_DIRS.NODE_MODULES)
 
     // 逐级查找目录
     for (const namePart of moduleNames) {
       targetPath = path.join(targetPath, namePart)
       if (!fs.existsSync(targetPath)) {
-        logToChat(`   ⚠️  目录不存在: ${targetPath}`)
+        logToChat(
+          formatMessage(SYNC_MODIFY_MESSAGES.TARGET_DIR_NOT_EXIST, {
+            path: targetPath
+          })
+        )
         return null
       }
     }
 
-    logToChat(`   ✓ 目标路径: ${targetPath}`)
+    logToChat(
+      formatMessage(SYNC_MODIFY_MESSAGES.TARGET_PATH_FOUND, {
+        path: targetPath
+      })
+    )
     return targetPath
   } catch (error) {
     logToChat(
-      `   ❌ 查找模块路径失败:`,
+      SYNC_MODIFY_MESSAGES.FIND_MODULE_FAILED,
       error instanceof Error ? error.message : String(error)
     )
     return null
@@ -107,7 +153,11 @@ function findPnpmModulePath(
  */
 function copyDirectory(srcDir: string, destDir: string): void {
   if (!fs.existsSync(srcDir)) {
-    logToChat(`     ⚠️  源目录不存在: ${srcDir}`)
+    logToChat(
+      formatMessage(SYNC_MODIFY_MESSAGES.SOURCE_DIR_NOT_EXIST, {
+        path: srcDir
+      })
+    )
     return
   }
 
@@ -136,24 +186,34 @@ function copyDirectory(srcDir: string, destDir: string): void {
  */
 function syncCompiledFiles(): boolean {
   try {
-    logToChat('\n📦 开始同步编译后的文件...')
+    logToChat(SYNC_MODIFY_MESSAGES.SYNC_START)
 
     // 1. 获取项目路径列表
     const { projectPaths } = configuration
 
     if (!projectPaths || projectPaths.length === 0) {
-      logToChat('⚠️  未配置项目路径')
+      logToChat(SYNC_MODIFY_MESSAGES.NO_PROJECT_PATHS)
       return true
     }
 
-    logToChat(`📂 项目列表 (${projectPaths.length}):`)
-    projectPaths.forEach((p) => logToChat(`   - ${p}`))
+    logToChat(
+      formatMessage(SYNC_MODIFY_MESSAGES.PROJECT_LIST, {
+        count: projectPaths.length
+      })
+    )
+    projectPaths.forEach((p) =>
+      logToChat(formatMessage(SYNC_MODIFY_MESSAGES.PROJECT_ITEM, { path: p }))
+    )
 
     // 2. 遍历项目路径，确保依赖已安装
-    logToChat('\n🔍 检查项目依赖...')
+    logToChat(SYNC_MODIFY_MESSAGES.CHECK_DEPENDENCIES)
     for (const projectPath of projectPaths) {
       if (!ensureProjectDependencies(projectPath)) {
-        logToChat(`❌ 项目 ${projectPath} 依赖检查失败，跳过`)
+        logToChat(
+          formatMessage(SYNC_MODIFY_MESSAGES.DEPENDENCY_CHECK_FAILED, {
+            path: projectPath
+          })
+        )
         continue
       }
     }
@@ -162,24 +222,38 @@ function syncCompiledFiles(): boolean {
     const buildedModules = getCachedBuildModules()
 
     if (buildedModules.length === 0) {
-      logToChat('\n⚠️  没有需要同步的模块')
+      logToChat(SYNC_MODIFY_MESSAGES.NO_MODULES_TO_SYNC)
       return true
     }
 
-    logToChat(`\n📋 需要同步的模块 (${buildedModules.length}):`)
-    buildedModules.forEach((m) => logToChat(`   - ${m.moduleName}`))
+    logToChat(
+      formatMessage(SYNC_MODIFY_MESSAGES.MODULES_TO_SYNC, {
+        count: buildedModules.length
+      })
+    )
+    buildedModules.forEach((m) =>
+      logToChat(
+        formatMessage(SYNC_MODIFY_MESSAGES.MODULE_ITEM, {
+          moduleName: m.moduleName
+        })
+      )
+    )
 
     // 4. 对每个模块和每个项目进行同步
-    logToChat('\n🔄 开始同步文件...\n')
+    logToChat(SYNC_MODIFY_MESSAGES.SYNC_FILES_START)
 
     let syncCount = 0
     let skipCount = 0
 
     for (const module of buildedModules) {
-      logToChat(`\n处理模块: ${module.moduleName}`)
+      logToChat(
+        formatMessage(SYNC_MODIFY_MESSAGES.PROCESSING_MODULE, {
+          moduleName: module.moduleName
+        })
+      )
 
       for (const projectPath of projectPaths) {
-        const nodeModulesPath = path.join(projectPath, 'node_modules')
+        const nodeModulesPath = path.join(projectPath, NODE_DIRS.NODE_MODULES)
 
         // 查找目标路径
         const targetPath = findPnpmModulePath(
@@ -188,32 +262,39 @@ function syncCompiledFiles(): boolean {
         )
 
         if (!targetPath) {
-          logToChat(`   ⚠️  跳过项目: ${projectPath}`)
+          logToChat(
+            formatMessage(SYNC_MODIFY_MESSAGES.SKIP_PROJECT, {
+              path: projectPath
+            })
+          )
           skipCount++
           continue
         }
 
         // 拷贝 dist、es、lib 目录
-        const dirsToCopy = ['dist', 'es', 'lib']
         let copiedDirs = 0
 
-        for (const dirName of dirsToCopy) {
+        for (const dirName of BUILD_OUTPUT_DIRS) {
           const srcDir = path.join(module.modulePath, dirName)
           const destDir = path.join(targetPath, dirName)
 
           if (fs.existsSync(srcDir)) {
-            logToChat(`     📁 拷贝 ${dirName}...`)
+            logToChat(
+              formatMessage(SYNC_MODIFY_MESSAGES.COPYING_DIR, { dirName })
+            )
             try {
               // 删除旧的目标目录
               if (fs.existsSync(destDir)) {
                 fs.rmSync(destDir, { recursive: true, force: true })
               }
               copyDirectory(srcDir, destDir)
-              logToChat(`     ✅ ${dirName} 拷贝成功`)
+              logToChat(
+                formatMessage(SYNC_MODIFY_MESSAGES.COPY_SUCCESS, { dirName })
+              )
               copiedDirs++
             } catch (error) {
               logToChat(
-                `     ❌ ${dirName} 拷贝失败:`,
+                formatMessage(SYNC_MODIFY_MESSAGES.COPY_FAILED, { dirName }),
                 error instanceof Error ? error.message : String(error)
               )
             }
@@ -221,25 +302,46 @@ function syncCompiledFiles(): boolean {
         }
 
         if (copiedDirs > 0) {
-          logToChat(`   ✅ 同步到项目: ${projectPath} (${copiedDirs} 个目录)`)
+          logToChat(
+            formatMessage(SYNC_MODIFY_MESSAGES.SYNC_TO_PROJECT, {
+              path: projectPath,
+              count: copiedDirs
+            })
+          )
           syncCount++
         } else {
-          logToChat(`   ⚠️  没有可拷贝的目录: ${projectPath}`)
+          logToChat(
+            formatMessage(SYNC_MODIFY_MESSAGES.NO_DIRS_TO_COPY, {
+              path: projectPath
+            })
+          )
           skipCount++
         }
       }
     }
 
-    logToChat(`\n\n📊 同步统计:`)
-    logToChat(`   ✅ 成功: ${syncCount}`)
-    logToChat(`   ⚠️  跳过: ${skipCount}`)
-    logToChat(`   📦 模块: ${buildedModules.length}`)
-    logToChat(`   📂 项目: ${projectPaths.length}\n`)
+    logToChat(SYNC_MODIFY_MESSAGES.SYNC_STATISTICS)
+    logToChat(
+      formatMessage(SYNC_MODIFY_MESSAGES.STAT_SUCCESS, { count: syncCount })
+    )
+    logToChat(
+      formatMessage(SYNC_MODIFY_MESSAGES.STAT_SKIPPED, { count: skipCount })
+    )
+    logToChat(
+      formatMessage(SYNC_MODIFY_MESSAGES.STAT_MODULES, {
+        count: buildedModules.length
+      })
+    )
+    logToChat(
+      formatMessage(SYNC_MODIFY_MESSAGES.STAT_PROJECTS, {
+        count: projectPaths.length
+      })
+    )
 
     return true
   } catch (error) {
     logToChat(
-      '❌ 同步编译文件失败:',
+      SYNC_MODIFY_MESSAGES.SYNC_FILES_FAILED,
       error instanceof Error ? error.message : String(error)
     )
     return false
@@ -253,13 +355,13 @@ function syncCompiledFiles(): boolean {
  */
 export function syncModifyCode(): boolean {
   try {
-    logToChat('🔄 开始同步修改代码...')
+    logToChat(SYNC_MODIFY_MESSAGES.SYNC_MODIFY_START)
 
     // 调用 buildModules 执行构建
     const buildResult = buildModules()
 
     if (!buildResult) {
-      logToChat('❌ 同步修改代码失败：构建过程出现错误')
+      logToChat(SYNC_MODIFY_MESSAGES.BUILD_FAILED)
       return false
     }
 
@@ -267,15 +369,15 @@ export function syncModifyCode(): boolean {
     const syncResult = syncCompiledFiles()
 
     if (!syncResult) {
-      logToChat('❌ 同步修改代码失败：文件同步出现错误')
+      logToChat(SYNC_MODIFY_MESSAGES.FILE_SYNC_FAILED)
       return false
     }
 
-    logToChat('✅ 同步修改代码成功')
+    logToChat(SYNC_MODIFY_MESSAGES.SYNC_MODIFY_SUCCESS)
     return true
   } catch (error) {
     logToChat(
-      '❌ 同步修改代码执行异常:',
+      SYNC_MODIFY_MESSAGES.SYNC_MODIFY_ERROR,
       error instanceof Error ? error.message : String(error)
     )
     return false
