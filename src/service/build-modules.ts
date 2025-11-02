@@ -45,25 +45,31 @@ export function registerBuildModules(server: McpServer): void {
         isBuildingInProgress = true
         console.error('🔨 开始执行构建任务...')
 
-        const result = buildModules()
+        return await new Promise((resolve) => {
+          setTimeout(() => {
+            const result = buildModules()
 
-        console.error(result ? '✅ 构建任务执行成功' : '❌ 构建任务执行失败')
+            console.error(
+              result ? '✅ 构建任务执行成功' : '❌ 构建任务执行失败'
+            )
 
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(
+            resolve({
+              content: [
                 {
-                  success: result,
-                  message: result ? '构建任务执行成功' : '构建任务执行失败'
-                },
-                null,
-                2
-              )
-            }
-          ]
-        }
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      success: result,
+                      message: result ? '构建任务执行成功' : '构建任务执行失败'
+                    },
+                    null,
+                    2
+                  )
+                }
+              ]
+            })
+          }, 0)
+        })
       } catch (e) {
         console.error('❌ 构建任务执行出错:', e)
         return {

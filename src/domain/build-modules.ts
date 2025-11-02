@@ -18,6 +18,7 @@ import {
   SPECIAL_CHARS,
   LOG_MESSAGES
 } from '../consts/index.ts'
+import { logToChat } from '../utils/index.ts'
 
 /**
  * 全局变量：缓存所有需要编译的模块列表
@@ -44,7 +45,7 @@ function getPackageDependencies(packageJsonPath: string): {
 
     // 检查是否存在 scripts.build，不存在则排除该模块
     if (!pkg.scripts || !pkg.scripts.build) {
-      console.error(
+      logToChat(
         `跳过模块 ${
           pkg[PACKAGE_FIELDS.NAME] || '未知'
         }: 缺少 scripts.build 配置`
@@ -68,10 +69,7 @@ function getPackageDependencies(packageJsonPath: string): {
       dependencies
     }
   } catch (error) {
-    console.error(
-      `读取${FILE_NAMES.PACKAGE_JSON}失败: ${packageJsonPath}`,
-      error
-    )
+    logToChat(`读取${FILE_NAMES.PACKAGE_JSON}失败: ${packageJsonPath}`, error)
     return null
   }
 }
@@ -89,7 +87,7 @@ function getAllPackageDependencies(
   // 读取pnpm-workspace.yaml或lerna.json来获取所有包路径
   const workspaceFile = path.join(projectPath, FILE_NAMES.WORKSPACE_CONFIG)
   if (!fs.existsSync(workspaceFile)) {
-    console.error(`未找到workspace配置文件: ${workspaceFile}`)
+    logToChat(`未找到workspace配置文件: ${workspaceFile}`)
     return dependencyMap
   }
 
@@ -233,9 +231,7 @@ function topologicalSort(
   function visit(moduleName: string, module: BuildedModule) {
     if (visited.has(moduleName)) return
     if (visiting.has(moduleName)) {
-      console.error(
-        LOG_MESSAGES.CIRCULAR_DEPENDENCY.replace('{name}', moduleName)
-      )
+      logToChat(LOG_MESSAGES.CIRCULAR_DEPENDENCY.replace('{name}', moduleName))
       return
     }
 
@@ -273,27 +269,25 @@ function topologicalSort(
 function getBuildedModules(): Record<string, BuildedModule[]> {
   const result: Record<string, BuildedModule[]> = {}
 
-  console.error(LOG_MESSAGES.ANALYZE_START)
+  logToChat(LOG_MESSAGES.ANALYZE_START)
 
   // 任务一和任务二：遍历modulesInfosDetail对象
   Object.entries(modulesInfosDetail).forEach(
     ([projectPath, modulesInfos]: [string, ModuleInfo[]]) => {
       if (modulesInfos.length === 0) {
-        console.error(
-          LOG_MESSAGES.NO_CHANGES_SKIP.replace('{path}', projectPath)
-        )
+        logToChat(LOG_MESSAGES.NO_CHANGES_SKIP.replace('{path}', projectPath))
         return
       }
 
-      console.error(LOG_MESSAGES.PROJECT_PATH.replace('{path}', projectPath))
-      console.error(
+      logToChat(LOG_MESSAGES.PROJECT_PATH.replace('{path}', projectPath))
+      logToChat(
         LOG_MESSAGES.MODULES_DETECTED.replace(
           '{count}',
           String(modulesInfos.length)
         )
       )
       modulesInfos.forEach((m) => {
-        console.error(`   - ${m.moduleName}`)
+        logToChat(`   - ${m.moduleName}`)
       })
 
       // 任务三：分析依赖关系并找出所有需要编译的模块
@@ -302,7 +296,7 @@ function getBuildedModules(): Record<string, BuildedModule[]> {
         const dependencyMap = getAllPackageDependencies(projectPath)
 
         if (dependencyMap.size === 0) {
-          console.error(LOG_MESSAGES.NO_DEPENDENCY_INFO)
+          logToChat(LOG_MESSAGES.NO_DEPENDENCY_INFO)
           result[projectPath] = modulesInfos.map(
             (m): BuildedModule => ({
               moduleName: m.moduleName,
@@ -322,7 +316,7 @@ function getBuildedModules(): Record<string, BuildedModule[]> {
 
           result[projectPath] = sortedModules
 
-          console.error(
+          logToChat(
             LOG_MESSAGES.BUILD_TOTAL.replace(
               '{count}',
               String(sortedModules.length)
@@ -335,11 +329,11 @@ function getBuildedModules(): Record<string, BuildedModule[]> {
                 : `被依赖 (${
                     m.dependedBy?.join(SPECIAL_CHARS.COMMA + ' ') ?? ''
                   })`
-            console.error(`   ${index + 1}. ${m.moduleName} - ${reasonText}`)
+            logToChat(`   ${index + 1}. ${m.moduleName} - ${reasonText}`)
           })
         }
       } catch (error) {
-        console.error(
+        logToChat(
           `❌ 分析项目 ${projectPath} 时出错:`,
           error instanceof Error ? error.message : error
         )
@@ -353,7 +347,7 @@ function getBuildedModules(): Record<string, BuildedModule[]> {
         )
       }
 
-      console.error(
+      logToChat(
         SPECIAL_CHARS.NEWLINE +
           SPECIAL_CHARS.SEPARATOR.repeat(80) +
           SPECIAL_CHARS.NEWLINE
@@ -400,20 +394,18 @@ function getCachedBuildModules(): BuildedModule[] {
  */
 export function buildModules(): boolean {
   if (!isFinished) {
-    console.error(LOG_MESSAGES.READY_FALSE_SKIP)
+    logToChat(LOG_MESSAGES.BUILD_NOT_READY)
     return false
   }
 
   const modules = getCachedBuildModules()
 
   if (modules.length === 0) {
-    console.error(LOG_MESSAGES.NO_MODULES_TO_BUILD)
+    logToChat(LOG_MESSAGES.NO_MODULES_TO_BUILD)
     return true
   }
 
-  console.error(
-    LOG_MESSAGES.BUILD_START.replace('{count}', String(modules.length))
-  )
+  logToChat(LOG_MESSAGES.BUILD_START.replace('{count}', String(modules.length)))
 
   let successCount = 0
   let failCount = 0
@@ -424,15 +416,13 @@ export function buildModules(): boolean {
         ? '直接变更'
         : `被依赖 (${module.dependedBy?.join(SPECIAL_CHARS.COMMA + ' ') ?? ''})`
 
-    console.error(
-      `[${index + 1}/${modules.length}] 编译模块: ${module.moduleName}`
-    )
-    console.error(`   路径: ${module.modulePath}`)
-    console.error(`   原因: ${reasonText}`)
+    logToChat(`[${index + 1}/${modules.length}] 编译模块: ${module.moduleName}`)
+    logToChat(`   路径: ${module.modulePath}`)
+    logToChat(`   原因: ${reasonText}`)
 
     try {
       // 执行 pnpm run build 命令
-      console.error(`   🔨 执行编译命令: pnpm run build`)
+      logToChat(`   🔨 执行编译命令: pnpm run build`)
 
       const startTime = Date.now()
 
@@ -444,31 +434,29 @@ export function buildModules(): boolean {
       })
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2)
-      console.error(
-        `   ✅ 编译成功 (耗时: ${duration}s)${SPECIAL_CHARS.NEWLINE}`
-      )
+      logToChat(`   ✅ 编译成功 (耗时: ${duration}s)${SPECIAL_CHARS.NEWLINE}`)
       successCount++
     } catch (error) {
-      console.error(
+      logToChat(
         `   ❌ 编译失败:`,
         error instanceof Error ? error.message : error
       )
-      console.error(SPECIAL_CHARS.NEWLINE)
+      logToChat(SPECIAL_CHARS.NEWLINE)
       failCount++
     }
   })
 
-  console.error(`\n📊 编译统计:`)
-  console.error(`   ✅ 成功: ${successCount}`)
-  console.error(`   ❌ 失败: ${failCount}`)
-  console.error(`   📦 总计: ${modules.length}\n`)
+  logToChat(`\n📊 编译统计:`)
+  logToChat(`   ✅ 成功: ${successCount}`)
+  logToChat(`   ❌ 失败: ${failCount}`)
+  logToChat(`   📦 总计: ${modules.length}\n`)
 
   // 根据编译结果返回状态
   if (failCount > 0) {
-    console.error(`❌ 编译完成，但有 ${failCount} 个模块编译失败`)
+    logToChat(`❌ 编译完成，但有 ${failCount} 个模块编译失败`)
     return false
   }
 
-  console.error(LOG_MESSAGES.BUILD_COMPLETE)
+  logToChat(LOG_MESSAGES.BUILD_COMPLETE)
   return true
 }
