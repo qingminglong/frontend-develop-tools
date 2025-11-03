@@ -12,6 +12,14 @@ import {
 let isBuildingInProgress = false
 
 /**
+ * 重置全局变量
+ * 用于清理进程退出或MCP被禁用时的互斥状态
+ */
+export function resetBuildModulesServiceGlobals(): void {
+  isBuildingInProgress = false
+}
+
+/**
  * 注册构建模块工具
  * 直接执行 buildModules 函数进行构建
  * 使用全局互斥标志位防止并发执行

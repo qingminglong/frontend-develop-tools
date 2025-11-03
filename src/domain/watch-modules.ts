@@ -371,3 +371,12 @@ export function watchModulesWithPath(modulePath: string): FSWatcher {
 
   return watcher
 }
+
+/**
+ * 重置全局变量
+ * 用于清理进程退出或MCP被禁用时的任务状态
+ */
+export function resetWatchModulesGlobals(): void {
+  // 取消当前正在执行的任务
+  taskManager.cancelCurrentTask()
+}

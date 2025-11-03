@@ -12,6 +12,14 @@ import {
 let isSyncingAssetsInProgress = false
 
 /**
+ * 重置全局变量
+ * 用于清理进程退出或MCP被禁用时的互斥状态
+ */
+export function resetSyncDesignStaticAssetsServiceGlobals(): void {
+  isSyncingAssetsInProgress = false
+}
+
+/**
  * 注册同步设计态静态资源工具
  * 用于同步设计态的静态资源文件到项目中
  * 使用全局互斥标志位防止并发执行

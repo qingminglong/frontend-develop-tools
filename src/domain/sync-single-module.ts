@@ -32,6 +32,18 @@ export const singleModulesInfosDetail: Record<string, ModuleInfo[]> = {}
 let cachedSingleBuildModules: BuildedModule[] = []
 
 /**
+ * 重置全局变量
+ * 用于清理进程退出或MCP被禁用时的缓存状态
+ */
+export function resetSyncSingleModuleGlobals(): void {
+  // 清空对象的所有属性
+  Object.keys(singleModulesInfosDetail).forEach((key) => {
+    delete singleModulesInfosDetail[key]
+  })
+  cachedSingleBuildModules = []
+}
+
+/**
  * 从用户输入中提取模块名
  * 支持多种格式：
  * - "同步@ida/ui模块下修改内容"

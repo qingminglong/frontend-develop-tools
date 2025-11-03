@@ -37,6 +37,16 @@ let isFinished = false
 let cachedStaticBuildModules: BuildedModule[] = []
 
 /**
+ * 重置全局变量
+ * 用于清理进程退出或MCP被禁用时的缓存状态
+ */
+export function resetBuildModulesGlobals(): void {
+  cachedBuildModules = []
+  isFinished = false
+  cachedStaticBuildModules = []
+}
+
+/**
  * 读取package.json并获取依赖信息
  * @param packageJsonPath - package.json文件路径
  * @returns 包依赖信息，如果没有build脚本则返回null

@@ -12,6 +12,14 @@ import {
 let isSyncModifyingInProgress = false
 
 /**
+ * 重置全局变量
+ * 用于清理进程退出或MCP被禁用时的互斥状态
+ */
+export function resetSyncModifyCodeServiceGlobals(): void {
+  isSyncModifyingInProgress = false
+}
+
+/**
  * 注册同步修改代码工具
  * 用于在代码修改后同步执行构建任务
  * 使用全局互斥标志位防止并发执行

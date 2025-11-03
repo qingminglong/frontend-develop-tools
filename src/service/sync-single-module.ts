@@ -10,6 +10,14 @@ import { ERROR_MESSAGES } from '../consts/index.ts'
 let isSyncSingleModuleInProgress = false
 
 /**
+ * 重置全局变量
+ * 用于清理进程退出或MCP被禁用时的互斥状态
+ */
+export function resetSyncSingleModuleServiceGlobals(): void {
+  isSyncSingleModuleInProgress = false
+}
+
+/**
  * 同步单个模块服务层消息常量
  */
 const SYNC_SINGLE_MODULE_SERVICE_MESSAGES = {

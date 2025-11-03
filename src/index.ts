@@ -8,6 +8,15 @@ import type { FSWatcher } from 'chokidar'
 import { startWatchingModules } from './domain/start-watch.ts'
 import { stopWatchingModules } from './domain/stop-watch.ts'
 
+// 导入所有重置全局变量的函数
+import { resetBuildModulesGlobals } from './domain/build-modules.ts'
+import { resetSyncSingleModuleGlobals } from './domain/sync-single-module.ts'
+import { resetWatchModulesGlobals } from './domain/watch-modules.ts'
+import { resetSyncSingleModuleServiceGlobals } from './service/sync-single-module.ts'
+import { resetSyncDesignStaticAssetsServiceGlobals } from './service/sync-design-static-assets.ts'
+import { resetBuildModulesServiceGlobals } from './service/build-modules.ts'
+import { resetSyncModifyCodeServiceGlobals } from './service/sync-modify-code.ts'
+
 // 导入所有服务注册函数
 import {
   registerGetConfiguration,
@@ -25,6 +34,27 @@ import {
 const watchers: Map<string, FSWatcher> = new Map()
 
 /**
+ * 重置所有全局变量
+ * 用于清理进程退出或MCP被禁用时的所有全局状态
+ */
+function resetAllGlobals(): void {
+  console.error('【重置全局变量】开始清理所有全局状态...')
+
+  // 重置 domain 层全局变量
+  resetBuildModulesGlobals()
+  resetSyncSingleModuleGlobals()
+  resetWatchModulesGlobals()
+
+  // 重置 service 层全局变量
+  resetSyncSingleModuleServiceGlobals()
+  resetSyncDesignStaticAssetsServiceGlobals()
+  resetBuildModulesServiceGlobals()
+  resetSyncModifyCodeServiceGlobals()
+
+  console.error('【重置全局变量】所有全局状态已清理完成')
+}
+
+/**
  * 定义了 MCP Server 实例。
  */
 const server = new McpServer({
@@ -34,9 +64,17 @@ const server = new McpServer({
 
 // 自动启动模块监控
 startWatchingModules(watchers)
-process.on('SIGINT', () => {
+
+process.on('SIGTERM', () => {
+  console.error('【SIGTERM】MCP被禁用了')
   stopWatchingModules(watchers)
+  resetAllGlobals()
   process.exit(0)
+})
+
+process.on('exit', () => {
+  console.error('【exit】MCP进程退出')
+  resetAllGlobals()
 })
 
 // 注册所有工具
