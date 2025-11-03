@@ -9,11 +9,14 @@ import {
   UMD_SKIP_CHECK_FILES,
   FILE_NAMES,
   ENCODINGS,
-  PACKAGE_FIELDS
+  PACKAGE_FIELDS,
+  SPECIAL_CHARS
 } from '../consts/index.ts'
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
+import yaml from 'js-yaml'
+import { glob } from 'glob'
 import type { ModuleInfo } from '../types/detect-changed-modules.ts'
 import type { BuildedModule } from '../types/build-modules.ts'
 
@@ -60,12 +63,124 @@ function extractModuleName(userInput: string): string | null {
 }
 
 /**
+ * 从workspace路径下获取所有工作区包的信息
+ * @param modulePath - 项目根目录路径
+ * @returns 包信息数组
+ */
+function getWorkspacePackages(modulePath: string): Array<{
+  name: string
+  path: string
+  srcPath: string
+  packageJsonPath: string
+}> {
+  const workspaceFile = path.join(modulePath, FILE_NAMES.WORKSPACE_CONFIG)
+  // 如果不存在workspace文件，返回空数组
+  if (!fs.existsSync(workspaceFile)) {
+    logToChat(`   ⚠️ workspace 文件不存在: ${workspaceFile}`)
+    return []
+  }
+
+  try {
+    const content = fs.readFileSync(workspaceFile, ENCODINGS.UTF8)
+    const config = yaml.load(content) as { packages: string[] }
+    const packages: Array<{
+      name: string
+      path: string
+      srcPath: string
+      packageJsonPath: string
+    }> = []
+
+    logToChat(
+      `   📄 workspace 配置包含 ${
+        config[PACKAGE_FIELDS.PACKAGES].length
+      } 个 pattern`
+    )
+
+    config[PACKAGE_FIELDS.PACKAGES].forEach((pattern: string) => {
+      // 跳过排除模式
+      if (pattern.startsWith(SPECIAL_CHARS.EXCLAMATION)) {
+        logToChat(`   ⏭️  跳过排除模式: ${pattern}`)
+        return
+      }
+
+      logToChat(`   🔍 解析 pattern: ${pattern}`)
+
+      // 解析glob pattern
+      const matches = glob.globSync(pattern, {
+        cwd: modulePath,
+        absolute: false
+      })
+
+      logToChat(`      找到 ${matches.length} 个匹配`)
+
+      matches.forEach((match: string) => {
+        const packagePath = path.join(modulePath, match)
+        const srcPath = path.join(packagePath, FILE_NAMES.SRC_DIR)
+        const packageJsonPath = path.join(packagePath, FILE_NAMES.PACKAGE_JSON)
+
+        const hasSrc = fs.existsSync(srcPath)
+        const hasPackageJson = fs.existsSync(packageJsonPath)
+
+        logToChat(
+          `      检查 ${match}: src=${hasSrc}, package.json=${hasPackageJson}`
+        )
+
+        // 检查是否存在src目录和package.json
+        if (hasSrc && hasPackageJson) {
+          packages.push({
+            name: match,
+            path: packagePath,
+            srcPath: srcPath,
+            packageJsonPath: packageJsonPath
+          })
+          logToChat(`      ✅ 添加包: ${match}`)
+        }
+      })
+    })
+
+    logToChat(`   📦 总共找到 ${packages.length} 个有效包`)
+    return packages
+  } catch (error) {
+    logToChat(
+      `   ⚠️ 解析 workspace 配置失败: ${modulePath}`,
+      error instanceof Error ? error.message : String(error)
+    )
+    return []
+  }
+}
+
+/**
+ * 从package.json中读取name属性
+ * @param packageJsonPath - package.json文件路径
+ * @returns package.json的name属性
+ */
+function getPackageName(packageJsonPath: string): string | null {
+  try {
+    const content = fs.readFileSync(packageJsonPath, ENCODINGS.UTF8)
+    const pkg = JSON.parse(content)
+    return pkg[PACKAGE_FIELDS.NAME] || null
+  } catch (error) {
+    logToChat(`   ⚠️ 读取 package.json 失败: ${packageJsonPath}`)
+    return null
+  }
+}
+
+/**
  * 在 configuration.modulePaths 中查找指定模块
  * @param moduleName - 模块名（如 @ida/ui）
  * @returns 找到的模块信息，如果未找到返回 null
  */
 function findModuleInConfiguration(moduleName: string): ModuleInfo | null {
   const { modulePaths } = configuration
+
+  console.error(
+    '[DEBUG] findModuleInConfiguration 被调用, moduleName=',
+    moduleName
+  )
+  console.error(
+    '[DEBUG] configuration.modulePaths=',
+    JSON.stringify(modulePaths)
+  )
 
   if (!modulePaths || modulePaths.length === 0) {
     logToChat('⚠️ 配置中未找到模块路径 (modulePaths)')
@@ -76,33 +191,43 @@ function findModuleInConfiguration(moduleName: string): ModuleInfo | null {
 
   // 遍历每个模块路径
   for (const modulePath of modulePaths) {
+    console.error('[DEBUG] 处理 modulePath=', modulePath)
     try {
-      const packageJsonPath = path.join(modulePath, FILE_NAMES.PACKAGE_JSON)
+      // 获取该路径下的所有工作区包
+      console.error('[DEBUG] 调用 getWorkspacePackages...')
+      const packages = getWorkspacePackages(modulePath)
+      console.error(
+        '[DEBUG] getWorkspacePackages 返回:',
+        packages.length,
+        '个包'
+      )
 
-      // 检查 package.json 是否存在
-      if (!fs.existsSync(packageJsonPath)) {
-        logToChat(`   ⚠️ 跳过 ${modulePath}: 未找到 package.json`)
+      if (packages.length === 0) {
+        logToChat(`   ⚠️ 跳过 ${modulePath}: 未找到工作区包`)
         continue
       }
 
-      // 读取并解析 package.json
-      const content = fs.readFileSync(packageJsonPath, ENCODINGS.UTF8)
-      const pkg = JSON.parse(content)
-      const packageName = pkg[PACKAGE_FIELDS.NAME]
+      logToChat(`   📦 在 ${modulePath} 中找到 ${packages.length} 个包`)
 
-      if (!packageName) {
-        logToChat(`   ⚠️ 跳过 ${modulePath}: package.json 中没有 name 字段`)
-        continue
-      }
+      // 在所有包中查找匹配的模块
+      for (const pkg of packages) {
+        const packageName = getPackageName(pkg.packageJsonPath)
 
-      // 大小写不敏感比较
-      if (packageName.toLowerCase() === moduleName.toLowerCase()) {
-        logToChat(`   ✅ 找到匹配的模块: ${packageName} (路径: ${modulePath})`)
-        return {
-          moduleName: packageName,
-          modulePath
+        if (!packageName) {
+          continue
+        }
+
+        // 大小写不敏感比较
+        if (packageName.toLowerCase() === moduleName.toLowerCase()) {
+          logToChat(`   ✅ 找到匹配的模块: ${packageName} (路径: ${pkg.path})`)
+          return {
+            moduleName: packageName,
+            modulePath: pkg.path
+          }
         }
       }
+
+      logToChat(`   ⚠️ 在 ${modulePath} 中未找到模块: ${moduleName}`)
     } catch (error) {
       logToChat(
         `   ❌ 处理模块路径 ${modulePath} 时出错:`,

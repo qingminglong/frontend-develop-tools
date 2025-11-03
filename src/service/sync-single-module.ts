@@ -1,4 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { z } from 'zod'
 import { syncSingleModule } from '../domain/sync-single-module.ts'
 import { clearLogBuffer, flushLogBuffer } from '../utils/index.ts'
 import { ERROR_MESSAGES } from '../consts/index.ts'
@@ -47,7 +48,11 @@ export function registerSyncSingleModule(server: McpServer): void {
       title: 'sync-single-module',
       description:
         '同步指定模块的修改内容并执行构建任务。从用户输入中提取模块名（如"同步@ida/ui模块下修改内容"），在配置的模块路径中查找对应的模块，然后执行构建和同步。参数：userInput (string, 必需) - 包含模块名的用户输入。',
-      inputSchema: {}
+      inputSchema: {
+        userInput: z
+          .string()
+          .describe('包含模块名的用户输入，例如："同步@ida/ui模块下修改内容"')
+      }
     },
     async (args: any) => {
       try {
@@ -196,6 +201,11 @@ export function registerSyncSingleModule(server: McpServer): void {
         // 无论成功还是失败，都重置互斥标志位
         isSyncSingleModuleInProgress = false
         console.error(SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_END)
+        console.error('🚀 ~ registerSyncSingleModule ~ args:', args)
+        console.error(
+          '🚀 ~ registerSyncSingleModule ~ args.userInput:',
+          args.userInput
+        )
       }
     }
   )
