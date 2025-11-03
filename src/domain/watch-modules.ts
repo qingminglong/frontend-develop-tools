@@ -327,6 +327,10 @@ export function watchModulesWithPath(modulePath: string): FSWatcher {
         packages,
         modulePath
       )
+      // 只有在 src 目录下的文件才处理
+      if (!info) {
+        return
+      }
       logChange(info)
       // 使用任务管理器执行任务，自动取消之前未完成的任务
       taskManager.executeTask(modulePath).catch((error) => {
@@ -342,6 +346,10 @@ export function watchModulesWithPath(modulePath: string): FSWatcher {
         packages,
         modulePath
       )
+      // 只有在 src 目录下的文件才处理
+      if (!info) {
+        return
+      }
       logChange(info)
       // 使用任务管理器执行任务，自动取消之前未完成的任务
       taskManager.executeTask(modulePath).catch((error) => {
@@ -357,6 +365,10 @@ export function watchModulesWithPath(modulePath: string): FSWatcher {
         packages,
         modulePath
       )
+      // 只有在 src 目录下的文件才处理
+      if (!info) {
+        return
+      }
       logChange(info)
       // 使用任务管理器执行任务，自动取消之前未完成的任务
       taskManager.executeTask(modulePath).catch((error) => {

@@ -132,10 +132,10 @@ function analyzeChangedModules(
 
   changedFiles.forEach((file) => {
     const absolutePath = path.join(modulePath, file)
-    // 检查文件是否在某个包中
+    // 检查文件是否在某个包的 src 目录下
     const matchedPackage = packages.find((pkg) => {
-      // 检查文件是否在包的目录下
-      const relPath = path.relative(pkg.path, absolutePath)
+      // 检查文件是否在包的 src 目录下
+      const relPath = path.relative(pkg.srcPath, absolutePath)
       return !relPath.startsWith('..') && !path.isAbsolute(relPath)
     })
 

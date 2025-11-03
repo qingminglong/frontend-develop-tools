@@ -108,7 +108,13 @@ export const CHOKIDAR_CONFIG = {
     /(^|[\/\\])\../, // 忽略隐藏文件
     '**/node_modules/**', // 忽略node_modules
     '**/dist/**', // 忽略构建产物
-    '**/*.map' // 忽略source map
+    '**/__tests__/**', // 忽略测试文件夹
+    '**/cypress/**', // 忽略cypress测试目录
+    '**/scripts/**', // 忽略scripts脚本目录
+    '**/*.map', // 忽略source map
+    '**/*.mjs', // 忽略mjs文件
+    '**/*.md', // 忽略markdown文件
+    '**/*.config.ts' // 忽略配置文件
   ] as Array<RegExp | string>,
   STABILITY_THRESHOLD: 100, // 文件稳定100ms后才触发
   POLL_INTERVAL: 50
