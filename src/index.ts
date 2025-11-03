@@ -17,7 +17,8 @@ import {
   registerGetWatchStatus,
   registerBuildModules,
   registerSyncModifyCode,
-  registerSyncDesignStaticAssets
+  registerSyncDesignStaticAssets,
+  registerSyncSingleModule
 } from './service/index.ts'
 
 /**
@@ -50,6 +51,7 @@ registerGetWatchStatus(server, watchers)
 registerBuildModules(server)
 registerSyncModifyCode(server)
 registerSyncDesignStaticAssets(server)
+registerSyncSingleModule(server)
 
 // 只有在手动模式下才注册启动/停止监控工具
 if (autoWatcher === 'false') {
