@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { FSWatcher } from 'chokidar'
 import { stopWatchingModules } from '../domain/stop-watch.ts'
+import { ERROR_MESSAGES } from '../consts/index.ts'
 
 /**
  * 注册停止模块监控工具
@@ -37,11 +38,13 @@ export function registerStopWatchModules(
           ]
         }
       } catch (e) {
+        const errorMsg =
+          e instanceof Error ? e.message : ERROR_MESSAGES.UNKNOWN_ERROR
         return {
           content: [
             {
               type: 'text',
-              text: `Error: ${e instanceof Error ? e.message : 'Unknown error'}`
+              text: `Error: ${errorMsg}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
             }
           ],
           isError: true

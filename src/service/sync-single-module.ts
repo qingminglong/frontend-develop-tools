@@ -61,7 +61,7 @@ export function registerSyncSingleModule(server: McpServer): void {
                 text: JSON.stringify(
                   {
                     success: false,
-                    message: SYNC_SINGLE_MODULE_SERVICE_MESSAGES.MISSING_INPUT
+                    message: `${SYNC_SINGLE_MODULE_SERVICE_MESSAGES.MISSING_INPUT}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
                   },
                   null,
                   2
@@ -84,7 +84,7 @@ export function registerSyncSingleModule(server: McpServer): void {
                 text: JSON.stringify(
                   {
                     success: false,
-                    message: SYNC_SINGLE_MODULE_SERVICE_MESSAGES.INVALID_INPUT
+                    message: `${SYNC_SINGLE_MODULE_SERVICE_MESSAGES.INVALID_INPUT}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
                   },
                   null,
                   2
