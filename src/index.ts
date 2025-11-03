@@ -12,8 +12,6 @@ import { stopWatchingModules } from './domain/stop-watch.ts'
 import {
   registerGetConfiguration,
   registerCheckConfiguration,
-  registerStartWatchModules,
-  registerStopWatchModules,
   registerGetWatchStatus,
   registerBuildModules,
   registerSyncModifyCode,
@@ -34,15 +32,12 @@ const server = new McpServer({
   version: '1.0.0'
 })
 
-// 根据 autoWatcher 环境变量决定是否自动启动模块监控
-const autoWatcher = process.env.autoWatcher
-if (autoWatcher !== 'false') {
-  startWatchingModules(watchers)
-  process.on('SIGINT', () => {
-    stopWatchingModules(watchers)
-    process.exit(0)
-  })
-}
+// 自动启动模块监控
+startWatchingModules(watchers)
+process.on('SIGINT', () => {
+  stopWatchingModules(watchers)
+  process.exit(0)
+})
 
 // 注册所有工具
 registerGetConfiguration(server)
@@ -52,12 +47,6 @@ registerBuildModules(server)
 registerSyncModifyCode(server)
 registerSyncDesignStaticAssets(server)
 registerSyncSingleModule(server)
-
-// 只有在手动模式下才注册启动/停止监控工具
-if (autoWatcher === 'false') {
-  registerStartWatchModules(server, watchers)
-  registerStopWatchModules(server, watchers)
-}
 
 /**
  * 启动服务器并建立与传输层的连接。
