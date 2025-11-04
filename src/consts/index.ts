@@ -77,15 +77,6 @@ export const EVENT_NAMES = {
 } as const
 
 /**
- * 监控器状态常量
- */
-export const WATCHER_STATUS = {
-  ALREADY_WATCHING: 'already_watching',
-  STARTED: 'started',
-  FAILED: 'failed'
-} as const
-
-/**
  * 终端颜色代码常量
  */
 export const ANSI_COLORS = {

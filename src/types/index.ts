@@ -9,10 +9,3 @@ export type {
   WorkspaceConfig as DetectWorkspaceConfig
 } from './detect-changed-modules.ts'
 export type { ProjectConfig } from './get-configuration.ts'
-export type {
-  WorkspacePackage as WatchWorkspacePackage,
-  WorkspaceConfig as WatchWorkspaceConfig,
-  ChangeInfo,
-  EventType,
-  EventNameType
-} from './watch-modules.ts'

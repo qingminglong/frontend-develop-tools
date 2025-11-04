@@ -154,8 +154,7 @@ node build/index.js
 frontend-develop-tools/
 ├── src/
 │   ├── index.ts              # 主入口文件
-│   ├── watch-modules.ts      # 模块监控功能
-│   └── detect-changed-modules.js
+│   └── detect-changed-modules.ts
 ├── build/                     # 编译输出目录
 ├── config.example.json       # 配置示例文件
 └── README.md                 # 文档

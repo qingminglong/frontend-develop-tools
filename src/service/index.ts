@@ -4,7 +4,6 @@
 
 export { registerGetConfiguration } from './get-configuration.ts'
 export { registerCheckConfiguration } from './check-configuration.ts'
-export { registerGetWatchStatus } from './get-watch-status.ts'
 export { registerBuildModules } from './build-modules.ts'
 export { registerSyncModifyCode } from './sync-modify-code.ts'
 export { registerSyncDesignStaticAssets } from './sync-design-static-assets.ts'

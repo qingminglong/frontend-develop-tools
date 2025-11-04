@@ -1,6 +1,11 @@
-import { buildModules, getCachedBuildModules } from './build-modules.ts'
+import {
+  buildModules,
+  getCachedBuildModules,
+  getAllBuildedModules
+} from './build-modules.ts'
 import { configuration } from './get-configuration.ts'
 import { logToChat } from '../utils/index.ts'
+import { detectAndCacheChangedModules } from './detect-changed-modules.ts'
 import {
   NODE_DIRS,
   BUILD_OUTPUT_DIRS,
@@ -574,6 +579,14 @@ function syncCompiledFiles(): boolean {
 export function syncModifyCode(): boolean {
   try {
     logToChat(SYNC_MODIFY_MESSAGES.SYNC_MODIFY_START)
+
+    // 检测变更的模块
+    for (const modulePath of configuration.modulePaths) {
+      detectAndCacheChangedModules(modulePath)
+    }
+
+    // 获取所有已构建的模块
+    getAllBuildedModules()
 
     // 调用 buildModules 执行构建
     const buildResult = buildModules()
