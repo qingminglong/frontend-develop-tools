@@ -536,10 +536,6 @@ function getWorkspacePackages(modulePath: string): Array<{
         const hasSrc = fs.existsSync(srcPath)
         const hasPackageJson = fs.existsSync(packageJsonPath)
 
-        logToChat(
-          `      检查 ${match}: src=${hasSrc}, package.json=${hasPackageJson}`
-        )
-
         // 检查是否存在src目录和package.json
         if (hasSrc && hasPackageJson) {
           packages.push({
@@ -585,9 +581,6 @@ export function getStaticBuildModules(): BuildedModule[] {
     logToChat('⚠️ 配置中未找到模块路径 (modulePaths)')
     return staticBuildedModules
   }
-
-  logToChat(`📦 找到 ${modulePaths.length} 个模块路径`)
-
   // 遍历每个模块路径
   modulePaths.forEach((modulePath) => {
     try {
@@ -599,8 +592,6 @@ export function getStaticBuildModules(): BuildedModule[] {
         return
       }
 
-      logToChat(`   📦 在 ${modulePath} 中找到 ${packages.length} 个包`)
-
       // 在所有包中检查是否有build脚本
       for (const pkg of packages) {
         try {
@@ -609,12 +600,7 @@ export function getStaticBuildModules(): BuildedModule[] {
           const packageJson = JSON.parse(content)
 
           // 检查是否存在scripts.build
-          if (!packageJson.scripts || !packageJson.scripts.build) {
-            logToChat(
-              `   ⚠️ 跳过 ${
-                packageJson[PACKAGE_FIELDS.NAME] || pkg.name
-              }: 缺少 scripts.build 配置`
-            )
+          if (!packageJson.scripts || !packageJson.scripts['build:umd']) {
             continue
           }
 
