@@ -8,7 +8,12 @@
     "frontend-develop-tools": "build/index.js"
   },
   "files": [
-    "build"
+    "build",
+    "commands/",
+		"rules/",
+		"scripts/",
+		"bin/",
+		"README.md"
   ],
   "exports": {
     ".": {
@@ -24,9 +29,6 @@
     "build": "vite build && tsc && chmod 755 build/index.js",
     "debug": "node build/index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.16.0",
     "axios": "^1.11.0",
@@ -45,5 +47,20 @@
     "vite": "5.4.11",
     "vite-plugin-dts": "4.3.0"
   },
-  "description": ""
+  "author": "qml",
+  "description": "",
+  "license": "MIT",
+  "keywords": [
+		"cursor",
+		"AI",
+		"commands",
+		"rules"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/qingminglong/frontend-develop-tools.git"
+	},
+	"engines": {
+		"node": ">=14.0.0"
+	}
 }
