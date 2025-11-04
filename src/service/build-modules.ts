@@ -32,7 +32,7 @@ export function registerBuildModules(server: McpServer): void {
       description: '执行模块构建任务',
       inputSchema: {}
     },
-    async () => {
+    () => {
       try {
         // 检查是否有编译操作正在执行
         if (isBuildingInProgress) {
@@ -64,53 +64,49 @@ export function registerBuildModules(server: McpServer): void {
         // 清空日志缓冲区，准备收集新的日志
         clearLogBuffer()
 
-        return await new Promise((resolve) => {
-          setTimeout(() => {
-            const result = buildModules()
+        const result = buildModules()
 
-            console.error(
-              result
-                ? BUILD_MODULES_SERVICE_MESSAGES.TASK_SUCCESS_LOG
-                : BUILD_MODULES_SERVICE_MESSAGES.TASK_FAILED_LOG
-            )
+        console.error(
+          result
+            ? BUILD_MODULES_SERVICE_MESSAGES.TASK_SUCCESS_LOG
+            : BUILD_MODULES_SERVICE_MESSAGES.TASK_FAILED_LOG
+        )
 
-            // 如果执行失败，使用 isError: true 标记，并包含详细的日志信息
-            if (!result) {
-              const detailedLogs = flushLogBuffer()
-              const errorMessage = detailedLogs
-                ? `${BUILD_MODULES_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-                : `${BUILD_MODULES_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
+        // 如果执行失败，使用 isError: true 标记，并包含详细的日志信息
+        if (!result) {
+          const detailedLogs = flushLogBuffer()
+          const errorMessage = detailedLogs
+            ? `${BUILD_MODULES_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
+            : `${BUILD_MODULES_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
 
-              resolve({
-                content: [
+          return {
+            content: [
+              {
+                type: 'text',
+                text: errorMessage
+              }
+            ],
+            isError: true
+          }
+        } else {
+          // 成功时清空日志缓冲区
+          flushLogBuffer()
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
                   {
-                    type: 'text',
-                    text: errorMessage
-                  }
-                ],
-                isError: true
-              })
-            } else {
-              // 成功时清空日志缓冲区
-              flushLogBuffer()
-              resolve({
-                content: [
-                  {
-                    type: 'text',
-                    text: JSON.stringify(
-                      {
-                        success: true,
-                        message: BUILD_MODULES_SERVICE_MESSAGES.TASK_SUCCESS
-                      },
-                      null,
-                      2
-                    )
-                  }
-                ]
-              })
-            }
-          }, 0)
-        })
+                    success: true,
+                    message: BUILD_MODULES_SERVICE_MESSAGES.TASK_SUCCESS
+                  },
+                  null,
+                  2
+                )
+              }
+            ]
+          }
+        }
       } catch (e) {
         console.error(BUILD_MODULES_SERVICE_MESSAGES.TASK_ERROR, e)
         const detailedLogs = flushLogBuffer()
