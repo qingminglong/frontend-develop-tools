@@ -17,7 +17,7 @@ import fs from 'fs'
 import path from 'path'
 import yaml from 'js-yaml'
 import { glob } from 'glob'
-import type { ModuleInfo } from '../types/detect-changed-modules.ts'
+import type { ModuleInfo } from '../types/detect-changed-module.ts'
 import type { BuildedModule } from '../types/build-modules.ts'
 
 /**

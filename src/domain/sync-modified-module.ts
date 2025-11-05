@@ -5,7 +5,7 @@ import {
 } from './build-modules.ts'
 import { configuration } from './get-configuration.ts'
 import { logToChat } from '../utils/index.ts'
-import { detectChangedModules } from './detect-changed-modules.ts'
+import { detectChangedModules } from './detect-changed-module.ts'
 import {
   NODE_DIRS,
   BUILD_OUTPUT_DIRS,

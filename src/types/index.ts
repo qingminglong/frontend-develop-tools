@@ -7,5 +7,5 @@ export type {
   ModuleInfo,
   WorkspacePackage as DetectWorkspacePackage,
   WorkspaceConfig as DetectWorkspaceConfig
-} from './detect-changed-modules.ts'
+} from './detect-changed-module.ts'
 export type { ProjectConfig } from './get-configuration.ts'

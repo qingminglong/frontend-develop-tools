@@ -1,11 +1,11 @@
-import { modulesInfosDetail } from './detect-changed-modules.ts'
+import { modulesInfosDetail } from './detect-changed-module.ts'
 import { configuration } from './get-configuration.ts'
 import { execSync } from 'child_process'
 import path from 'path'
 import fs from 'fs'
 import { glob } from 'glob'
 import yaml from 'js-yaml'
-import type { ModuleInfo } from '../types/detect-changed-modules.ts'
+import type { ModuleInfo } from '../types/detect-changed-module.ts'
 import type {
   PackageDependencyInfo,
   BuildedModule
