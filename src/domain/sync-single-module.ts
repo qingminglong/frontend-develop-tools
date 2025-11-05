@@ -185,34 +185,16 @@ function getPackageName(packageJsonPath: string): string | null {
 function findModuleInConfiguration(moduleName: string): ModuleInfo | null {
   const { modulePaths } = configuration
 
-  console.error(
-    '[DEBUG] findModuleInConfiguration 被调用, moduleName=',
-    moduleName
-  )
-  console.error(
-    '[DEBUG] configuration.modulePaths=',
-    JSON.stringify(modulePaths)
-  )
-
   if (!modulePaths || modulePaths.length === 0) {
     logToChat('⚠️ 配置中未找到模块路径 (modulePaths)')
     return null
   }
 
-  logToChat(`🔍 在 ${modulePaths.length} 个模块路径中查找模块: ${moduleName}`)
-
   // 遍历每个模块路径
   for (const modulePath of modulePaths) {
-    console.error('[DEBUG] 处理 modulePath=', modulePath)
     try {
       // 获取该路径下的所有工作区包
-      console.error('[DEBUG] 调用 getWorkspacePackages...')
       const packages = getWorkspacePackages(modulePath)
-      console.error(
-        '[DEBUG] getWorkspacePackages 返回:',
-        packages.length,
-        '个包'
-      )
 
       if (packages.length === 0) {
         logToChat(`   ⚠️ 跳过 ${modulePath}: 未找到工作区包`)
@@ -238,8 +220,6 @@ function findModuleInConfiguration(moduleName: string): ModuleInfo | null {
           }
         }
       }
-
-      logToChat(`   ⚠️ 在 ${modulePath} 中未找到模块: ${moduleName}`)
     } catch (error) {
       logToChat(
         `   ❌ 处理模块路径 ${modulePath} 时出错:`,
@@ -248,7 +228,6 @@ function findModuleInConfiguration(moduleName: string): ModuleInfo | null {
     }
   }
 
-  logToChat(`   ❌ 未找到模块: ${moduleName}`)
   return null
 }
 

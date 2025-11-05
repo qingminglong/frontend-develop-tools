@@ -18,7 +18,7 @@ import {
   registerCheckConfiguration,
   registerBuildModules,
   registerSyncModifyCode,
-  registerSyncDesignStaticAssets,
+  registerSyncDesignModel,
   registerSyncSingleModule
 } from './service/index.ts'
 
@@ -66,7 +66,7 @@ registerGetConfiguration(server)
 registerCheckConfiguration(server)
 registerBuildModules(server)
 registerSyncModifyCode(server)
-registerSyncDesignStaticAssets(server)
+registerSyncDesignModel(server)
 registerSyncSingleModule(server)
 
 /**

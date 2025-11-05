@@ -615,9 +615,9 @@ export function syncModifiedModule(): boolean {
     getAllBuildedModules()
 
     // 调用 buildModules 执行构建
-    const buildResult = buildModules()
+    const isSuccess = buildModules()
 
-    if (!buildResult) {
+    if (!isSuccess) {
       logToChat(SYNC_MODIFIED_MODULE_MESSAGES.BUILD_FAILED)
       return false
     }

@@ -22,12 +22,12 @@ export function resetSyncDesignStaticAssetsServiceGlobals(): void {
  * 用于同步设计态的静态资源文件到项目中
  * 使用全局互斥标志位防止并发执行
  */
-export function registerSyncDesignStaticAssets(server: McpServer): void {
+export function registerSyncDesignModel(server: McpServer): void {
   server.registerTool(
-    'sync-design-static-assets',
+    'sync-design-module',
     {
-      title: 'sync-design-static-assets',
-      description: '同步设计态的静态资源文件到项目中',
+      title: 'sync-design-module',
+      description: '执行构建任务并同步设计态的静态资源文件到项目中',
       inputSchema: {}
     },
     () => {

@@ -29,18 +29,23 @@ export function registerSyncSingleModule(server: McpServer): void {
     {
       title: 'sync-single-module',
       description:
-        '同步指定模块的修改内容并执行构建任务。从用户输入中提取模块名（如"同步@ida/ui模块下修改内容"），在配置的模块路径中查找对应的模块，然后执行构建和同步。参数：userInput (string, 必需) - 包含模块名的用户输入。',
+        '执行构建任务并同步指定模块。从用户输入中提取模块名（如"执行构建任务并同步@ida/ui模块的修改内容"）。',
       inputSchema: {
         userInput: z
           .string()
-          .describe('包含模块名的用户输入，例如："同步@ida/ui模块下修改内容"')
+          .describe(
+            '包含模块名的用户输入，例如："执行构建任务并同步@ida/ui模块的修改内容"'
+          )
       }
     },
     (args: any) => {
       try {
         // 验证输入参数
-        if (!args.userInput) {
-          console.error(SYNC_SINGLE_MODULE_SERVICE_MESSAGES.MISSING_INPUT)
+        if (!args.userInput || args.userInput.trim().length === 0) {
+          const errorMessage = !args.userInput
+            ? SYNC_SINGLE_MODULE_SERVICE_MESSAGES.MISSING_INPUT
+            : SYNC_SINGLE_MODULE_SERVICE_MESSAGES.INVALID_INPUT
+          console.error(errorMessage)
           return {
             content: [
               {
@@ -48,30 +53,7 @@ export function registerSyncSingleModule(server: McpServer): void {
                 text: JSON.stringify(
                   {
                     success: false,
-                    message: `${SYNC_SINGLE_MODULE_SERVICE_MESSAGES.MISSING_INPUT}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-                  },
-                  null,
-                  2
-                )
-              }
-            ],
-            isError: true
-          }
-        }
-
-        if (
-          typeof args.userInput !== 'string' ||
-          args.userInput.trim().length === 0
-        ) {
-          console.error(SYNC_SINGLE_MODULE_SERVICE_MESSAGES.INVALID_INPUT)
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(
-                  {
-                    success: false,
-                    message: `${SYNC_SINGLE_MODULE_SERVICE_MESSAGES.INVALID_INPUT}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
+                    message: `${errorMessage}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
                   },
                   null,
                   2
@@ -124,9 +106,13 @@ export function registerSyncSingleModule(server: McpServer): void {
         // 如果执行失败，使用 isError: true 标记，并包含详细的日志信息
         if (!result) {
           const detailedLogs = flushLogBuffer()
-          const errorMessage = detailedLogs
-            ? `${SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-            : `${SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
+          const errorMessage = `${
+            SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_FAILED
+          }${
+            detailedLogs
+              ? `${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}`
+              : ''
+          }${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
 
           return {
             content: [
@@ -161,9 +147,13 @@ export function registerSyncSingleModule(server: McpServer): void {
         const detailedLogs = flushLogBuffer()
         const errorMsg =
           e instanceof Error ? e.message : ERROR_MESSAGES.UNKNOWN_ERROR
-        const fullErrorMessage = detailedLogs
-          ? `${SYNC_SINGLE_MODULE_SERVICE_MESSAGES.ERROR_PREFIX}${errorMsg}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-          : `${SYNC_SINGLE_MODULE_SERVICE_MESSAGES.ERROR_PREFIX}${errorMsg}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
+        const fullErrorMessage = `${
+          SYNC_SINGLE_MODULE_SERVICE_MESSAGES.ERROR_PREFIX
+        }${errorMsg}${
+          detailedLogs
+            ? `${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}`
+            : ''
+        }${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
 
         return {
           content: [
@@ -178,7 +168,6 @@ export function registerSyncSingleModule(server: McpServer): void {
         // 无论成功还是失败，都重置互斥标志位
         isSyncSingleModuleInProgress = false
         console.error(SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_END)
-        console.error('🚀 ~ registerSyncSingleModule ~ args:', args)
         console.error(
           '🚀 ~ registerSyncSingleModule ~ args.userInput:',
           args.userInput

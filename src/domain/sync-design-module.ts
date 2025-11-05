@@ -606,9 +606,9 @@ export function syncDesignModule(): boolean {
     logToChat(SYNC_DESIGN_MODULE_MESSAGES.SYNC_START)
 
     // 调用 buildStaticModules 执行构建
-    const buildResult = buildStaticModules()
+    const isSuccess = buildStaticModules()
 
-    if (!buildResult) {
+    if (!isSuccess) {
       logToChat(SYNC_DESIGN_MODULE_MESSAGES.SYNC_FAILED, '构建过程出现错误')
       return false
     }

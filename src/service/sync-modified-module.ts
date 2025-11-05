@@ -24,10 +24,10 @@ export function resetSyncModifyCodeServiceGlobals(): void {
  */
 export function registerSyncModifyCode(server: McpServer): void {
   server.registerTool(
-    'sync-modify-code',
+    'sync-modified-code',
     {
-      title: 'sync-modify-code',
-      description: '同步修改代码并执行构建任务',
+      title: 'sync-modified-code',
+      description: '执行构建任务并同步修改的代码',
       inputSchema: {}
     },
     () => {
