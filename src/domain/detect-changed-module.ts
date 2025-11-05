@@ -53,7 +53,6 @@ export function getWorkspacePackages(modulePath: string): WorkspacePackage[] {
 
   // 先处理包含模式
   includePatterns.forEach((pattern: string) => {
-    console.error('[DEBUG] ----------------------------包含模式: ', pattern)
     const matches = glob.globSync(pattern, {
       cwd: modulePath,
       absolute: false
@@ -77,12 +76,6 @@ export function getWorkspacePackages(modulePath: string): WorkspacePackage[] {
   // 再处理排除模式，过滤掉不需要的包
   const filteredPackages = packages.filter((pkg) => {
     const shouldExclude = excludePatterns.some((excludePattern) => {
-      console.error(
-        '[DEBUG] --------------------检查排除模式: ',
-        excludePattern,
-        ' vs ',
-        pkg.name
-      )
       // 直接字符串匹配检查是否匹配排除模式
       return pkg.name === excludePattern
     })
