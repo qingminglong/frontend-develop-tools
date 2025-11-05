@@ -2,10 +2,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { syncSingleModule } from '../domain/sync-single-module.ts'
 import { clearLogBuffer, flushLogBuffer } from '../utils/index.ts'
-import {
-  ERROR_MESSAGES,
-  SYNC_SINGLE_MODULE_SERVICE_MESSAGES
-} from '../consts/index.ts'
+import { ERROR_MESSAGES } from '../consts/index.ts'
+import { SYNC_SINGLE_MODULE_SERVICE_MESSAGES } from '../consts/sync-single-module.ts'
 
 /**
  * 全局互斥标志位：标识是否有同步单个模块操作正在执行

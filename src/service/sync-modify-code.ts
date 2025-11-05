@@ -1,10 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { syncModifyCode } from '../domain/sync-modify-code.ts'
 import { clearLogBuffer, flushLogBuffer } from '../utils/index.ts'
-import {
-  SYNC_MODIFY_CODE_SERVICE_MESSAGES,
-  ERROR_MESSAGES
-} from '../consts/index.ts'
+import { SYNC_MODIFY_CODE_SERVICE_MESSAGES } from '../consts/sync-modify-code.ts'
+import { ERROR_MESSAGES } from '../consts/index.ts'
 
 /**
  * 全局互斥标志位：标识是否有同步修改代码操作正在执行

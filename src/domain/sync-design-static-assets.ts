@@ -8,11 +8,11 @@ import {
   NODE_DIRS,
   BUILD_OUTPUT_DIRS,
   PACKAGE_MANAGER_COMMANDS,
-  SYNC_MODIFY_MESSAGES,
   UMD_DIRS,
-  UMD_SKIP_CHECK_FILES,
-  SYNC_DESIGN_ASSETS_MESSAGES
+  UMD_SKIP_CHECK_FILES
 } from '../consts/index.ts'
+import { SYNC_MODIFY_MESSAGES } from '../consts/sync-modify-code.ts'
+import { SYNC_DESIGN_ASSETS_MESSAGES } from '../consts/sync-design-static-assets.ts'
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'

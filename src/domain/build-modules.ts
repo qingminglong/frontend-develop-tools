@@ -544,7 +544,7 @@ function getWorkspacePackages(modulePath: string): Array<{
             srcPath: srcPath,
             packageJsonPath: packageJsonPath
           })
-          logToChat(`      ✅ 添加包: ${match}`)
+          logToChat(`      ✅ 添加有效包: ${match}`)
         }
       })
     })

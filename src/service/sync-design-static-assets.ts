@@ -1,10 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { syncDesignStaticAssets } from '../domain/sync-design-static-assets.ts'
 import { clearLogBuffer, flushLogBuffer } from '../utils/index.ts'
-import {
-  SYNC_DESIGN_ASSETS_SERVICE_MESSAGES,
-  ERROR_MESSAGES
-} from '../consts/index.ts'
+import { SYNC_DESIGN_ASSETS_SERVICE_MESSAGES } from '../consts/sync-design-static-assets.ts'
+import { ERROR_MESSAGES } from '../consts/index.ts'
 
 /**
  * 全局互斥标志位：标识是否有同步静态资源操作正在执行
