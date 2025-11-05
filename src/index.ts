@@ -8,9 +8,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { resetBuildModulesGlobals } from './domain/build-modules.ts'
 import { resetSyncSingleModuleGlobals } from './domain/sync-single-module.ts'
 import { resetSyncSingleModuleServiceGlobals } from './service/sync-single-module.ts'
-import { resetSyncDesignStaticAssetsServiceGlobals } from './service/sync-design-static-assets.ts'
+import { resetSyncDesignStaticAssetsServiceGlobals } from './service/sync-design-module.ts'
 import { resetBuildModulesServiceGlobals } from './service/build-modules.ts'
-import { resetSyncModifyCodeServiceGlobals } from './service/sync-modify-code.ts'
+import { resetSyncModifyCodeServiceGlobals } from './service/sync-modified-module.ts'
 
 // 导入所有服务注册函数
 import {

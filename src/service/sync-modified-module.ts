@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { syncModifyCode } from '../domain/sync-modify-code.ts'
+import { syncModifiedModule } from '../domain/sync-modified-module.ts'
 import { clearLogBuffer, flushLogBuffer } from '../utils/index.ts'
-import { SYNC_MODIFY_CODE_SERVICE_MESSAGES } from '../consts/sync-modify-code.ts'
+import { SYNC_MODIFIED_MODULE_SERVICE_MESSAGES } from '../consts/sync-modified-module.ts'
 import { ERROR_MESSAGES } from '../consts/index.ts'
 
 /**
@@ -35,7 +35,7 @@ export function registerSyncModifyCode(server: McpServer): void {
         // 检查是否有同步修改操作正在执行
         if (isSyncModifyingInProgress) {
           console.error(
-            SYNC_MODIFY_CODE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING
+            SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING
           )
           return {
             content: [
@@ -45,7 +45,7 @@ export function registerSyncModifyCode(server: McpServer): void {
                   {
                     success: false,
                     message:
-                      SYNC_MODIFY_CODE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
+                      SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
                   },
                   null,
                   2
@@ -57,26 +57,26 @@ export function registerSyncModifyCode(server: McpServer): void {
 
         // 设置互斥标志位
         isSyncModifyingInProgress = true
-        console.error(SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_START)
+        console.error(SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_START)
 
         // 清空日志缓冲区，准备收集新的日志
         clearLogBuffer()
 
-        // 调用 domain 中的 syncModifyCode 方法
-        const result = syncModifyCode()
+        // 调用 domain 中的 syncModifiedModule 方法
+        const result = syncModifiedModule()
 
         console.error(
           result
-            ? SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_SUCCESS_LOG
-            : SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_FAILED_LOG
+            ? SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_SUCCESS_LOG
+            : SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_FAILED_LOG
         )
 
         // 如果执行失败，使用 isError: true 标记，并包含详细的日志信息
         if (!result) {
           const detailedLogs = flushLogBuffer()
           const errorMessage = detailedLogs
-            ? `${SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-            : `${SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
+            ? `${SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
+            : `${SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
 
           return {
             content: [
@@ -97,7 +97,7 @@ export function registerSyncModifyCode(server: McpServer): void {
                 text: JSON.stringify(
                   {
                     success: true,
-                    message: SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_SUCCESS
+                    message: SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_SUCCESS
                   },
                   null,
                   2
@@ -107,13 +107,13 @@ export function registerSyncModifyCode(server: McpServer): void {
           }
         }
       } catch (e) {
-        console.error(SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_ERROR, e)
+        console.error(SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_ERROR, e)
         const detailedLogs = flushLogBuffer()
         const errorMsg =
           e instanceof Error ? e.message : ERROR_MESSAGES.UNKNOWN_ERROR
         const fullErrorMessage = detailedLogs
-          ? `${SYNC_MODIFY_CODE_SERVICE_MESSAGES.ERROR_PREFIX}${errorMsg}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-          : `${SYNC_MODIFY_CODE_SERVICE_MESSAGES.ERROR_PREFIX}${errorMsg}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
+          ? `${SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.ERROR_PREFIX}${errorMsg}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
+          : `${SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.ERROR_PREFIX}${errorMsg}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
 
         return {
           content: [
@@ -127,7 +127,7 @@ export function registerSyncModifyCode(server: McpServer): void {
       } finally {
         // 无论成功还是失败，都重置互斥标志位
         isSyncModifyingInProgress = false
-        console.error(SYNC_MODIFY_CODE_SERVICE_MESSAGES.TASK_END)
+        console.error(SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_END)
       }
     }
   )

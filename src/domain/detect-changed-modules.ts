@@ -158,7 +158,7 @@ function analyzeChangedModules(
  * @param modulePath - 项目根目录路径
  * @returns 变更的模块信息数组
  */
-export function detectAndCacheChangedModules(modulePath: string): ModuleInfo[] {
+export function detectChangedModules(modulePath: string): ModuleInfo[] {
   // 获取所有工作区包
   const packages = getWorkspacePackages(modulePath)
   if (packages.length === 0) {

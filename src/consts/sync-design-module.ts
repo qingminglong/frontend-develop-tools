@@ -1,7 +1,7 @@
 /**
  * 同步设计态静态资源相关消息常量
  */
-export const SYNC_DESIGN_ASSETS_MESSAGES = {
+export const SYNC_DESIGN_MODULE_MESSAGES = {
   // 主流程相关
   SYNC_START: '🔄 开始同步设计态静态资源...',
   SYNC_SUCCESS: '✅ 设计态静态资源同步成功',
@@ -46,7 +46,7 @@ export const SYNC_DESIGN_ASSETS_MESSAGES = {
 /**
  * 同步设计态静态资源服务层消息常量
  */
-export const SYNC_DESIGN_ASSETS_SERVICE_MESSAGES = {
+export const SYNC_DESIGN_MODULE_SERVICE_MESSAGES = {
   // 互斥控制相关
   OPERATION_IN_PROGRESS_WARNING:
     '⚠️  有静态资源同步操作正在执行，请等待上次操作完成再尝试',

@@ -1,11 +1,9 @@
 import {
-  buildModules,
-  getCachedBuildModules,
-  getAllBuildedModules
+  buildStaticModules,
+  getCachedStaticBuildModules
 } from './build-modules.ts'
 import { configuration } from './get-configuration.ts'
 import { logToChat } from '../utils/index.ts'
-import { detectAndCacheChangedModules } from './detect-changed-modules.ts'
 import {
   NODE_DIRS,
   BUILD_OUTPUT_DIRS,
@@ -13,7 +11,8 @@ import {
   UMD_DIRS,
   UMD_SKIP_CHECK_FILES
 } from '../consts/index.ts'
-import { SYNC_MODIFY_MESSAGES } from '../consts/sync-modify-code.ts'
+import { SYNC_MODIFIED_MODULE_MESSAGES } from '../consts/sync-modified-module.ts'
+import { SYNC_DESIGN_MODULE_MESSAGES } from '../consts/sync-design-module.ts'
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
@@ -46,7 +45,7 @@ function ensureProjectDependencies(projectPath: string): boolean {
       fs.readdirSync(nodeModulesPath).length === 0
     ) {
       logToChat(
-        formatMessage(SYNC_MODIFY_MESSAGES.MISSING_DEPENDENCIES, {
+        formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.MISSING_DEPENDENCIES, {
           path: projectPath
         })
       )
@@ -55,15 +54,15 @@ function ensureProjectDependencies(projectPath: string): boolean {
         stdio: 'inherit',
         encoding: 'utf8'
       })
-      logToChat(SYNC_MODIFY_MESSAGES.DEPENDENCIES_INSTALLED)
+      logToChat(SYNC_MODIFIED_MODULE_MESSAGES.DEPENDENCIES_INSTALLED)
       return true
     }
 
-    logToChat(SYNC_MODIFY_MESSAGES.DEPENDENCIES_EXIST)
+    logToChat(SYNC_MODIFIED_MODULE_MESSAGES.DEPENDENCIES_EXIST)
     return true
   } catch (error) {
     logToChat(
-      SYNC_MODIFY_MESSAGES.INSTALL_FAILED,
+      SYNC_MODIFIED_MODULE_MESSAGES.INSTALL_FAILED,
       error instanceof Error ? error.message : String(error)
     )
     return false
@@ -85,7 +84,7 @@ function findPnpmModulePath(
 
     if (!fs.existsSync(pnpmPath)) {
       logToChat(
-        formatMessage(SYNC_MODIFY_MESSAGES.PNPM_DIR_NOT_FOUND, {
+        formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.PNPM_DIR_NOT_FOUND, {
           path: pnpmPath
         })
       )
@@ -97,7 +96,7 @@ function findPnpmModulePath(
     const projectModulesName = moduleNames.join('+')
 
     logToChat(
-      formatMessage(SYNC_MODIFY_MESSAGES.SEARCHING_MODULE, {
+      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.SEARCHING_MODULE, {
         moduleName,
         prefix: projectModulesName
       })
@@ -111,7 +110,7 @@ function findPnpmModulePath(
 
     if (!matchedDir) {
       logToChat(
-        formatMessage(SYNC_MODIFY_MESSAGES.PNPM_DIR_NOT_MATCHED, {
+        formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.PNPM_DIR_NOT_MATCHED, {
           prefix: projectModulesName
         })
       )
@@ -119,7 +118,9 @@ function findPnpmModulePath(
     }
 
     logToChat(
-      formatMessage(SYNC_MODIFY_MESSAGES.PNPM_DIR_FOUND, { dir: matchedDir })
+      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.PNPM_DIR_FOUND, {
+        dir: matchedDir
+      })
     )
 
     // 构建目标路径: .pnpm/{matched}/node_modules/@scope/package-name
@@ -130,7 +131,7 @@ function findPnpmModulePath(
       targetPath = path.join(targetPath, namePart)
       if (!fs.existsSync(targetPath)) {
         logToChat(
-          formatMessage(SYNC_MODIFY_MESSAGES.TARGET_DIR_NOT_EXIST, {
+          formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.TARGET_DIR_NOT_EXIST, {
             path: targetPath
           })
         )
@@ -139,14 +140,14 @@ function findPnpmModulePath(
     }
 
     logToChat(
-      formatMessage(SYNC_MODIFY_MESSAGES.TARGET_PATH_FOUND, {
+      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.TARGET_PATH_FOUND, {
         path: targetPath
       })
     )
     return targetPath
   } catch (error) {
     logToChat(
-      SYNC_MODIFY_MESSAGES.FIND_MODULE_FAILED,
+      SYNC_MODIFIED_MODULE_MESSAGES.FIND_MODULE_FAILED,
       error instanceof Error ? error.message : String(error)
     )
     return null
@@ -161,7 +162,7 @@ function findPnpmModulePath(
 function copyDirectory(srcDir: string, destDir: string): void {
   if (!fs.existsSync(srcDir)) {
     logToChat(
-      formatMessage(SYNC_MODIFY_MESSAGES.SOURCE_DIR_NOT_EXIST, {
+      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.SOURCE_DIR_NOT_EXIST, {
         path: srcDir
       })
     )
@@ -231,13 +232,17 @@ function syncUmdFiles(
 
     if (!fs.existsSync(umdDir)) {
       logToChat(
-        formatMessage(SYNC_MODIFY_MESSAGES.UMD_DIR_NOT_FOUND, { moduleName })
+        formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.UMD_DIR_NOT_FOUND, {
+          moduleName
+        })
       )
       return 0
     }
 
     logToChat(
-      formatMessage(SYNC_MODIFY_MESSAGES.UMD_DIR_FOUND, { path: umdDir })
+      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.UMD_DIR_FOUND, {
+        path: umdDir
+      })
     )
 
     // 2. 获取 umd 目录下的所有文件
@@ -252,13 +257,15 @@ function syncUmdFiles(
     }
 
     logToChat(
-      formatMessage(SYNC_MODIFY_MESSAGES.UMD_FILES_FOUND, {
+      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.UMD_FILES_FOUND, {
         count: allUmdFiles.length
       })
     )
     allUmdFiles.forEach((file) =>
       logToChat(
-        formatMessage(SYNC_MODIFY_MESSAGES.UMD_FILE_ITEM, { fileName: file })
+        formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.UMD_FILE_ITEM, {
+          fileName: file
+        })
       )
     )
 
@@ -320,9 +327,12 @@ function syncUmdFiles(
             filescopied++
           } catch (error) {
             logToChat(
-              formatMessage(SYNC_MODIFY_MESSAGES.UMD_FILE_COPY_FAILED, {
-                fileName
-              }),
+              formatMessage(
+                SYNC_MODIFIED_MODULE_MESSAGES.UMD_FILE_COPY_FAILED,
+                {
+                  fileName
+                }
+              ),
               error instanceof Error ? error.message : String(error)
             )
           }
@@ -330,7 +340,7 @@ function syncUmdFiles(
 
         if (filescopied > 0) {
           logToChat(
-            formatMessage(SYNC_MODIFY_MESSAGES.UMD_DIR_COPIED, {
+            formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.UMD_DIR_COPIED, {
               destPath: targetDir,
               count: filescopied
             })
@@ -348,7 +358,7 @@ function syncUmdFiles(
     }
   } catch (error) {
     logToChat(
-      SYNC_MODIFY_MESSAGES.UMD_FILE_COPY_FAILED,
+      SYNC_MODIFIED_MODULE_MESSAGES.UMD_FILE_COPY_FAILED,
       error instanceof Error ? error.message : String(error)
     )
   }
@@ -357,36 +367,38 @@ function syncUmdFiles(
 }
 
 /**
- * 同步编译后的文件到项目依赖中
+ * 同步编译后的静态资源文件到项目依赖中
  * @returns 是否成功
  */
-function syncCompiledFiles(): boolean {
+function syncStaticCompiledFiles(): boolean {
   try {
-    logToChat(SYNC_MODIFY_MESSAGES.SYNC_START)
+    logToChat(SYNC_MODIFIED_MODULE_MESSAGES.SYNC_START)
 
     // 1. 获取项目路径列表
     const { projectPaths } = configuration
 
     if (!projectPaths || projectPaths.length === 0) {
-      logToChat(SYNC_MODIFY_MESSAGES.NO_PROJECT_PATHS)
+      logToChat(SYNC_MODIFIED_MODULE_MESSAGES.NO_PROJECT_PATHS)
       return true
     }
 
     logToChat(
-      formatMessage(SYNC_MODIFY_MESSAGES.PROJECT_LIST, {
+      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.PROJECT_LIST, {
         count: projectPaths.length
       })
     )
     projectPaths.forEach((p) =>
-      logToChat(formatMessage(SYNC_MODIFY_MESSAGES.PROJECT_ITEM, { path: p }))
+      logToChat(
+        formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.PROJECT_ITEM, { path: p })
+      )
     )
 
     // 2. 遍历项目路径，确保依赖已安装
-    logToChat(SYNC_MODIFY_MESSAGES.CHECK_DEPENDENCIES)
+    logToChat(SYNC_MODIFIED_MODULE_MESSAGES.CHECK_DEPENDENCIES)
     for (const projectPath of projectPaths) {
       if (!ensureProjectDependencies(projectPath)) {
         logToChat(
-          formatMessage(SYNC_MODIFY_MESSAGES.DEPENDENCY_CHECK_FAILED, {
+          formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.DEPENDENCY_CHECK_FAILED, {
             path: projectPath
           })
         )
@@ -394,29 +406,29 @@ function syncCompiledFiles(): boolean {
       }
     }
 
-    // 3. 获取需要同步的模块列表
-    const buildedModules = getCachedBuildModules()
+    // 3. 获取需要同步的模块列表（使用 getCachedStaticBuildModules）
+    const buildedModules = getCachedStaticBuildModules()
 
     if (buildedModules.length === 0) {
-      logToChat(SYNC_MODIFY_MESSAGES.NO_MODULES_TO_SYNC)
+      logToChat(SYNC_MODIFIED_MODULE_MESSAGES.NO_MODULES_TO_SYNC)
       return true
     }
 
     logToChat(
-      formatMessage(SYNC_MODIFY_MESSAGES.MODULES_TO_SYNC, {
+      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.MODULES_TO_SYNC, {
         count: buildedModules.length
       })
     )
     buildedModules.forEach((m) =>
       logToChat(
-        formatMessage(SYNC_MODIFY_MESSAGES.MODULE_ITEM, {
+        formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.MODULE_ITEM, {
           moduleName: m.moduleName
         })
       )
     )
 
     // 4. 对每个模块和每个项目进行同步
-    logToChat(SYNC_MODIFY_MESSAGES.SYNC_FILES_START)
+    logToChat(SYNC_MODIFIED_MODULE_MESSAGES.SYNC_FILES_START)
 
     let syncCount = 0
     let skipCount = 0
@@ -424,7 +436,7 @@ function syncCompiledFiles(): boolean {
 
     for (const module of buildedModules) {
       logToChat(
-        formatMessage(SYNC_MODIFY_MESSAGES.PROCESSING_MODULE, {
+        formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.PROCESSING_MODULE, {
           moduleName: module.moduleName
         })
       )
@@ -440,7 +452,7 @@ function syncCompiledFiles(): boolean {
 
         if (!targetPath) {
           logToChat(
-            formatMessage(SYNC_MODIFY_MESSAGES.SKIP_PROJECT, {
+            formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.SKIP_PROJECT, {
               path: projectPath
             })
           )
@@ -457,7 +469,9 @@ function syncCompiledFiles(): boolean {
 
           if (fs.existsSync(srcDir)) {
             logToChat(
-              formatMessage(SYNC_MODIFY_MESSAGES.COPYING_DIR, { dirName })
+              formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.COPYING_DIR, {
+                dirName
+              })
             )
             try {
               // 删除旧的目标目录
@@ -466,12 +480,16 @@ function syncCompiledFiles(): boolean {
               }
               copyDirectory(srcDir, destDir)
               logToChat(
-                formatMessage(SYNC_MODIFY_MESSAGES.COPY_SUCCESS, { dirName })
+                formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.COPY_SUCCESS, {
+                  dirName
+                })
               )
               copiedDirs++
             } catch (error) {
               logToChat(
-                formatMessage(SYNC_MODIFY_MESSAGES.COPY_FAILED, { dirName }),
+                formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.COPY_FAILED, {
+                  dirName
+                }),
                 error instanceof Error ? error.message : String(error)
               )
             }
@@ -480,7 +498,7 @@ function syncCompiledFiles(): boolean {
 
         if (copiedDirs > 0) {
           logToChat(
-            formatMessage(SYNC_MODIFY_MESSAGES.SYNC_TO_PROJECT, {
+            formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.SYNC_TO_PROJECT, {
               path: projectPath,
               count: copiedDirs
             })
@@ -488,7 +506,7 @@ function syncCompiledFiles(): boolean {
           syncCount++
         } else {
           logToChat(
-            formatMessage(SYNC_MODIFY_MESSAGES.NO_DIRS_TO_COPY, {
+            formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.NO_DIRS_TO_COPY, {
               path: projectPath
             })
           )
@@ -497,16 +515,19 @@ function syncCompiledFiles(): boolean {
       }
 
       // 5. 同步 UMD 文件到项目中的匹配位置
-      logToChat(SYNC_MODIFY_MESSAGES.UMD_SYNC_START)
+      logToChat(SYNC_MODIFIED_MODULE_MESSAGES.UMD_SYNC_START)
 
       // 过滤掉包含 app.html 和 preview.html 的项目
       const filteredProjectPaths = projectPaths.filter((projectPath) => {
         const shouldSkip = shouldSkipUmdSync(projectPath)
         if (shouldSkip) {
           logToChat(
-            formatMessage(SYNC_MODIFY_MESSAGES.UMD_SKIP_PROJECT_WITH_HTML, {
-              path: projectPath
-            })
+            formatMessage(
+              SYNC_MODIFIED_MODULE_MESSAGES.UMD_SKIP_PROJECT_WITH_HTML,
+              {
+                path: projectPath
+              }
+            )
           )
         }
         return !shouldSkip
@@ -514,7 +535,7 @@ function syncCompiledFiles(): boolean {
 
       if (filteredProjectPaths.length > 0) {
         logToChat(
-          formatMessage(SYNC_MODIFY_MESSAGES.UMD_FILTERED_PROJECTS, {
+          formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.UMD_FILTERED_PROJECTS, {
             count: filteredProjectPaths.length
           })
         )
@@ -528,7 +549,7 @@ function syncCompiledFiles(): boolean {
 
       if (umdCopiedCount > 0) {
         logToChat(
-          formatMessage(SYNC_MODIFY_MESSAGES.UMD_SYNC_SUMMARY, {
+          formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.UMD_SYNC_SUMMARY, {
             count: umdCopiedCount
           })
         )
@@ -536,26 +557,30 @@ function syncCompiledFiles(): boolean {
       }
     }
 
-    logToChat(SYNC_MODIFY_MESSAGES.SYNC_STATISTICS)
+    logToChat(SYNC_MODIFIED_MODULE_MESSAGES.SYNC_STATISTICS)
     logToChat(
-      formatMessage(SYNC_MODIFY_MESSAGES.STAT_SUCCESS, { count: syncCount })
+      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.STAT_SUCCESS, {
+        count: syncCount
+      })
     )
     logToChat(
-      formatMessage(SYNC_MODIFY_MESSAGES.STAT_SKIPPED, { count: skipCount })
+      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.STAT_SKIPPED, {
+        count: skipCount
+      })
     )
     logToChat(
-      formatMessage(SYNC_MODIFY_MESSAGES.STAT_MODULES, {
+      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.STAT_MODULES, {
         count: buildedModules.length
       })
     )
     logToChat(
-      formatMessage(SYNC_MODIFY_MESSAGES.STAT_PROJECTS, {
+      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.STAT_PROJECTS, {
         count: projectPaths.length
       })
     )
     if (totalUmdCopied > 0) {
       logToChat(
-        formatMessage(SYNC_MODIFY_MESSAGES.UMD_SYNC_SUMMARY, {
+        formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.UMD_SYNC_SUMMARY, {
           count: totalUmdCopied
         })
       )
@@ -564,7 +589,7 @@ function syncCompiledFiles(): boolean {
     return true
   } catch (error) {
     logToChat(
-      SYNC_MODIFY_MESSAGES.SYNC_FILES_FAILED,
+      SYNC_MODIFIED_MODULE_MESSAGES.SYNC_FILES_FAILED,
       error instanceof Error ? error.message : String(error)
     )
     return false
@@ -572,43 +597,35 @@ function syncCompiledFiles(): boolean {
 }
 
 /**
- * 同步修改代码
- * 在代码修改后同步执行构建任务并同步编译后的文件
- * @returns 同步修改是否成功执行
+ * 同步设计态静态资源文件
+ * 将模块路径中的静态资源构建并同步到项目路径中对应的目录
+ * @returns 是否成功
  */
-export function syncModifyCode(): boolean {
+export function syncDesignModule(): boolean {
   try {
-    logToChat(SYNC_MODIFY_MESSAGES.SYNC_MODIFY_START)
+    logToChat(SYNC_DESIGN_MODULE_MESSAGES.SYNC_START)
 
-    // 检测变更的模块
-    for (const modulePath of configuration.modulePaths) {
-      detectAndCacheChangedModules(modulePath)
-    }
-
-    // 获取所有已构建的模块
-    getAllBuildedModules()
-
-    // 调用 buildModules 执行构建
-    const buildResult = buildModules()
+    // 调用 buildStaticModules 执行构建
+    const buildResult = buildStaticModules()
 
     if (!buildResult) {
-      logToChat(SYNC_MODIFY_MESSAGES.BUILD_FAILED)
+      logToChat(SYNC_DESIGN_MODULE_MESSAGES.SYNC_FAILED, '构建过程出现错误')
       return false
     }
 
     // 同步编译后的文件
-    const syncResult = syncCompiledFiles()
+    const syncResult = syncStaticCompiledFiles()
 
     if (!syncResult) {
-      logToChat(SYNC_MODIFY_MESSAGES.FILE_SYNC_FAILED)
+      logToChat(SYNC_DESIGN_MODULE_MESSAGES.SYNC_FAILED, '文件同步出现错误')
       return false
     }
 
-    logToChat(SYNC_MODIFY_MESSAGES.SYNC_MODIFY_SUCCESS)
+    logToChat(SYNC_DESIGN_MODULE_MESSAGES.SYNC_SUCCESS)
     return true
   } catch (error) {
     logToChat(
-      SYNC_MODIFY_MESSAGES.SYNC_MODIFY_ERROR,
+      SYNC_DESIGN_MODULE_MESSAGES.SYNC_ERROR,
       error instanceof Error ? error.message : String(error)
     )
     return false

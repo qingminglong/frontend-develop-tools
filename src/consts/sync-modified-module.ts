@@ -1,7 +1,7 @@
 /**
  * 同步修改代码日志消息常量
  */
-export const SYNC_MODIFY_MESSAGES = {
+export const SYNC_MODIFIED_MODULE_MESSAGES = {
   // 依赖检查相关
   MISSING_DEPENDENCIES: '   📦 项目 {path} 缺少依赖，开始安装...',
   DEPENDENCIES_INSTALLED: '   ✅ 依赖安装完成',
@@ -75,7 +75,7 @@ export const SYNC_MODIFY_MESSAGES = {
 /**
  * 同步修改代码服务层消息常量
  */
-export const SYNC_MODIFY_CODE_SERVICE_MESSAGES = {
+export const SYNC_MODIFIED_MODULE_SERVICE_MESSAGES = {
   // 互斥控制相关
   OPERATION_IN_PROGRESS_WARNING:
     '⚠️  有同步修改操作正在执行，请等待上次操作完成再尝试',
