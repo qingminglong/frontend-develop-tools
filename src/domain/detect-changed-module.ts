@@ -55,7 +55,8 @@ export function getWorkspacePackages(modulePath: string): WorkspacePackage[] {
   includePatterns.forEach((pattern: string) => {
     const matches = glob.globSync(pattern, {
       cwd: modulePath,
-      absolute: false
+      absolute: false,
+      ignore: ['**/node_modules/**']
     })
     matches.forEach((match) => {
       const packagePath = path.join(modulePath, match)
@@ -79,9 +80,6 @@ export function getWorkspacePackages(modulePath: string): WorkspacePackage[] {
       // 直接字符串匹配检查是否匹配排除模式
       return pkg.name === excludePattern
     })
-    if (shouldExclude) {
-      console.error('[DEBUG] --------------------排除包: ', pkg.name)
-    }
     return !shouldExclude
   })
 

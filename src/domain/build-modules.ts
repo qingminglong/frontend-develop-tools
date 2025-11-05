@@ -61,11 +61,6 @@ function getPackageDependencies(packageJsonPath: string): {
 
     // 检查是否存在 scripts.build，不存在则排除该模块
     if (!pkg.scripts || !pkg.scripts.build) {
-      logToChat(
-        `跳过模块 ${
-          pkg[PACKAGE_FIELDS.NAME] || '未知'
-        }: 缺少 scripts.build 配置`
-      )
       return null
     }
 
@@ -116,7 +111,8 @@ function getAllPackageDependencies(
 
     const matches = glob.globSync(pattern, {
       cwd: projectPath,
-      absolute: false
+      absolute: false,
+      ignore: ['**/node_modules/**']
     })
 
     matches.forEach((match: string) => {
@@ -570,7 +566,6 @@ export function getStaticBuildModules(): BuildedModule[] {
     try {
       // 获取该路径下的所有工作区包
       const packages = getWorkspacePackages(modulePath)
-
       if (packages.length === 0) {
         logToChat(`   ⚠️ 跳过 ${modulePath}: 未找到工作区包`)
         return
@@ -587,7 +582,7 @@ export function getStaticBuildModules(): BuildedModule[] {
           const content = fs.readFileSync(pkg.packageJsonPath, ENCODINGS.UTF8)
           const packageJson = JSON.parse(content)
 
-          // 检查是否存在scripts.build
+          // 检查是否存在scripts['build:umd']
           if (!packageJson.scripts || !packageJson.scripts['build:umd']) {
             continue
           }
