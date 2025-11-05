@@ -279,6 +279,64 @@ function topologicalSort(
 }
 
 /**
+ * 分析并过滤静态模块
+ * 合并依赖信息、进行拓扑排序并过滤出有build:umd脚本的模块
+ * @param staticModulesToBuild - 要构建的静态模块列表
+ * @param allDependencyMaps - 所有项目的依赖信息映射
+ * @returns 过滤后的静态模块列表
+ */
+function analyzeAndFilterStaticModules(
+  staticModulesToBuild: ModuleInfo[],
+  allDependencyMaps: Map<string, Map<string, PackageDependencyInfo>>
+): BuildedModule[] {
+  // 合并所有项目的依赖信息，用于跨项目依赖分析
+  const mergedDependencyMap = new Map<string, PackageDependencyInfo>()
+  allDependencyMaps.forEach((depMap) => {
+    depMap.forEach((depInfo, pkgName) => {
+      mergedDependencyMap.set(pkgName, depInfo)
+    })
+  })
+
+  try {
+    // 分析需要编译的所有静态模块（包括依赖关系）
+    const modulesToBuild = analyzeModulesToBuild(
+      staticModulesToBuild,
+      mergedDependencyMap
+    )
+
+    // 进行拓扑排序，确保编译顺序正确
+    const sortedModules = topologicalSort(modulesToBuild, mergedDependencyMap)
+
+    // 过滤出实际存在的静态模块（确保只包含有build:umd脚本的模块）
+    const finalModules = sortedModules.filter((module) => {
+      try {
+        const content = fs.readFileSync(
+          path.join(module.modulePath, FILE_NAMES.PACKAGE_JSON),
+          ENCODINGS.UTF8
+        )
+        const packageJson = JSON.parse(content)
+        return packageJson.scripts && packageJson.scripts['build:umd']
+      } catch {
+        return false
+      }
+    })
+
+    return finalModules
+  } catch (error) {
+    logToChat(
+      '❌ 分析静态模块依赖关系时出错:',
+      error instanceof Error ? error.message : error
+    )
+    // 出错时降级为仅返回直接找到的静态模块
+    return staticModulesToBuild.map((module) => ({
+      moduleName: module.moduleName,
+      modulePath: module.modulePath,
+      reason: BUILD_REASON.CHANGED
+    }))
+  }
+}
+
+/**
  * 主函数：遍历所有项目并分析需要编译的模块
  * @returns 按项目分组的编译模块信息
  */
@@ -564,66 +622,25 @@ export function getStaticBuildModules(): BuildedModule[] {
     return staticBuildedModules
   }
 
-  // 合并所有项目的依赖信息，用于跨项目依赖分析
-  const mergedDependencyMap = new Map<string, PackageDependencyInfo>()
-  allDependencyMaps.forEach((depMap) => {
-    depMap.forEach((depInfo, pkgName) => {
-      mergedDependencyMap.set(pkgName, depInfo)
-    })
+  // 分析并过滤静态模块
+  const finalModules = analyzeAndFilterStaticModules(
+    staticModulesToBuild,
+    allDependencyMaps
+  )
+
+  staticBuildedModules.push(...finalModules)
+
+  logToChat(
+    `\n📊 静态资源模块分析完成: 共 ${finalModules.length} 个模块需要构建`
+  )
+  finalModules.forEach((m, index) => {
+    const reasonText =
+      m.reason === BUILD_REASON.CHANGED
+        ? '直接变更'
+        : `被依赖 (${m.dependedBy?.join(SPECIAL_CHARS.COMMA + ' ') ?? ''})`
+    logToChat(`   ${index + 1}. ${m.moduleName} - ${reasonText}`)
   })
-
-  try {
-    // 分析需要编译的所有静态模块（包括依赖关系）
-    const modulesToBuild = analyzeModulesToBuild(
-      staticModulesToBuild,
-      mergedDependencyMap
-    )
-
-    // 进行拓扑排序，确保编译顺序正确
-    const sortedModules = topologicalSort(modulesToBuild, mergedDependencyMap)
-
-    // 过滤出实际存在的静态模块（确保只包含有build:umd脚本的模块）
-    const finalModules = sortedModules.filter((module) => {
-      try {
-        const content = fs.readFileSync(
-          path.join(module.modulePath, FILE_NAMES.PACKAGE_JSON),
-          ENCODINGS.UTF8
-        )
-        const packageJson = JSON.parse(content)
-        return packageJson.scripts && packageJson.scripts['build:umd']
-      } catch {
-        return false
-      }
-    })
-
-    staticBuildedModules.push(...finalModules)
-
-    logToChat(
-      `\n📊 静态资源模块分析完成: 共 ${finalModules.length} 个模块需要构建`
-    )
-    finalModules.forEach((m, index) => {
-      const reasonText =
-        m.reason === BUILD_REASON.CHANGED
-          ? '直接变更'
-          : `被依赖 (${m.dependedBy?.join(SPECIAL_CHARS.COMMA + ' ') ?? ''})`
-      logToChat(`   ${index + 1}. ${m.moduleName} - ${reasonText}`)
-    })
-    logToChat('')
-  } catch (error) {
-    logToChat(
-      '❌ 分析静态模块依赖关系时出错:',
-      error instanceof Error ? error.message : error
-    )
-    // 出错时降级为仅编译直接找到的静态模块
-    staticModulesToBuild.forEach((module) => {
-      staticBuildedModules.push({
-        moduleName: module.moduleName,
-        modulePath: module.modulePath,
-        reason: BUILD_REASON.CHANGED
-      })
-    })
-    logToChat('⚠️ 降级为仅编译直接找到的静态模块')
-  }
+  logToChat('')
 
   // 更新缓存
   cachedStaticBuildModules = staticBuildedModules
