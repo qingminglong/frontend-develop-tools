@@ -1,3 +1,6 @@
+import { execSync } from 'child_process'
+import fs from 'fs'
+import path from 'path'
 import {
   buildStaticModules,
   getCachedStaticBuildModules
@@ -13,9 +16,6 @@ import {
 } from '../consts/index.ts'
 import { SYNC_MODIFIED_MODULE_MESSAGES } from '../consts/sync-modified-module.ts'
 import { SYNC_DESIGN_MODULE_MESSAGES } from '../consts/sync-design-module.ts'
-import { execSync } from 'child_process'
-import fs from 'fs'
-import path from 'path'
 
 /**
  * 替换消息模板中的占位符
@@ -520,16 +520,6 @@ function syncStaticCompiledFiles(): boolean {
       // 过滤掉包含 app.html 和 preview.html 的项目
       const filteredProjectPaths = projectPaths.filter((projectPath) => {
         const shouldSkip = shouldSkipUmdSync(projectPath)
-        if (shouldSkip) {
-          logToChat(
-            formatMessage(
-              SYNC_MODIFIED_MODULE_MESSAGES.UMD_SKIP_PROJECT_WITH_HTML,
-              {
-                path: projectPath
-              }
-            )
-          )
-        }
         return !shouldSkip
       })
 
@@ -561,11 +551,6 @@ function syncStaticCompiledFiles(): boolean {
     logToChat(
       formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.STAT_SUCCESS, {
         count: syncCount
-      })
-    )
-    logToChat(
-      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.STAT_SKIPPED, {
-        count: skipCount
       })
     )
     logToChat(
@@ -614,9 +599,9 @@ export function syncDesignModule(): boolean {
     }
 
     // 同步编译后的文件
-    const syncResult = syncStaticCompiledFiles()
+    const isSyncSuccess = syncStaticCompiledFiles()
 
-    if (!syncResult) {
+    if (!isSyncSuccess) {
       logToChat(SYNC_DESIGN_MODULE_MESSAGES.SYNC_FAILED, '文件同步出现错误')
       return false
     }

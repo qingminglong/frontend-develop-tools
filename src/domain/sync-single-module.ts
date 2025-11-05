@@ -8,18 +8,15 @@ import {
   UMD_SKIP_CHECK_FILES,
   FILE_NAMES,
   ENCODINGS,
-  PACKAGE_FIELDS,
-  SPECIAL_CHARS
+  PACKAGE_FIELDS
 } from '../consts/index.ts'
 import { SYNC_MODIFIED_MODULE_MESSAGES } from '../consts/sync-modified-module.ts'
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
-import yaml from 'js-yaml'
-import { glob } from 'glob'
 import type { ModuleInfo } from '../types/detect-changed-module.ts'
 import type { BuildedModule } from '../types/build-modules.ts'
-
+import { getWorkspacePackages } from './detect-changed-module.ts'
 /**
  * 全局变量：缓存单个指定模块的信息详情
  * 结构与 modulesInfosDetail 相同
@@ -72,93 +69,6 @@ function extractModuleName(userInput: string): string | null {
   }
 
   return null
-}
-
-/**
- * 从workspace路径下获取所有工作区包的信息
- * @param modulePath - 项目根目录路径
- * @returns 包信息数组
- */
-function getWorkspacePackages(modulePath: string): Array<{
-  name: string
-  path: string
-  srcPath: string
-  packageJsonPath: string
-}> {
-  const workspaceFile = path.join(modulePath, FILE_NAMES.WORKSPACE_CONFIG)
-  // 如果不存在workspace文件，返回空数组
-  if (!fs.existsSync(workspaceFile)) {
-    logToChat(`   ⚠️ workspace 文件不存在: ${workspaceFile}`)
-    return []
-  }
-
-  try {
-    const content = fs.readFileSync(workspaceFile, ENCODINGS.UTF8)
-    const config = yaml.load(content) as { packages: string[] }
-    const packages: Array<{
-      name: string
-      path: string
-      srcPath: string
-      packageJsonPath: string
-    }> = []
-
-    logToChat(
-      `   📄 workspace 配置包含 ${
-        config[PACKAGE_FIELDS.PACKAGES].length
-      } 个 pattern`
-    )
-
-    config[PACKAGE_FIELDS.PACKAGES].forEach((pattern: string) => {
-      // 跳过排除模式
-      if (pattern.startsWith(SPECIAL_CHARS.EXCLAMATION)) {
-        logToChat(`   ⏭️  跳过排除模式: ${pattern}`)
-        return
-      }
-
-      logToChat(`   🔍 解析 pattern: ${pattern}`)
-
-      // 解析glob pattern
-      const matches = glob.globSync(pattern, {
-        cwd: modulePath,
-        absolute: false
-      })
-
-      logToChat(`      找到 ${matches.length} 个匹配`)
-
-      matches.forEach((match: string) => {
-        const packagePath = path.join(modulePath, match)
-        const srcPath = path.join(packagePath, FILE_NAMES.SRC_DIR)
-        const packageJsonPath = path.join(packagePath, FILE_NAMES.PACKAGE_JSON)
-
-        const hasSrc = fs.existsSync(srcPath)
-        const hasPackageJson = fs.existsSync(packageJsonPath)
-
-        logToChat(
-          `      检查 ${match}: src=${hasSrc}, package.json=${hasPackageJson}`
-        )
-
-        // 检查是否存在src目录和package.json
-        if (hasSrc && hasPackageJson) {
-          packages.push({
-            name: match,
-            path: packagePath,
-            srcPath: srcPath,
-            packageJsonPath: packageJsonPath
-          })
-          logToChat(`      ✅ 添加包: ${match}`)
-        }
-      })
-    })
-
-    logToChat(`   📦 总共找到 ${packages.length} 个有效包`)
-    return packages
-  } catch (error) {
-    logToChat(
-      `   ⚠️ 解析 workspace 配置失败: ${modulePath}`,
-      error instanceof Error ? error.message : String(error)
-    )
-    return []
-  }
 }
 
 /**

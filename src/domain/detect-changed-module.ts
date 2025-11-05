@@ -26,7 +26,7 @@ export const modulesInfosDetail: Record<string, ModuleInfo[]> = {}
  * @param modulePath - 项目根目录路径
  * @returns 包信息数组
  */
-function getWorkspacePackages(modulePath: string): WorkspacePackage[] {
+export function getWorkspacePackages(modulePath: string): WorkspacePackage[] {
   const workspaceFile = path.join(modulePath, FILE_NAMES.WORKSPACE_CONFIG)
   // 如果不存在workspace文件，返回空数组
   if (!fs.existsSync(workspaceFile)) {
@@ -34,14 +34,26 @@ function getWorkspacePackages(modulePath: string): WorkspacePackage[] {
   }
   const content = fs.readFileSync(workspaceFile, ENCODINGS.UTF8)
   const config = yaml.load(content) as WorkspaceConfig
-  const packages: WorkspacePackage[] = []
+
+  // 分离包含模式和排除模式
+  const includePatterns: string[] = []
+  const excludePatterns: string[] = []
 
   config[PACKAGE_FIELDS.PACKAGES].forEach((pattern: string) => {
-    // 跳过排除模式
     if (pattern.startsWith(SPECIAL_CHARS.EXCLAMATION)) {
-      return
+      // 排除模式，去掉前缀的 '!'
+      excludePatterns.push(pattern.slice(1))
+    } else {
+      // 包含模式
+      includePatterns.push(pattern)
     }
-    // 解析glob pattern
+  })
+
+  const packages: WorkspacePackage[] = []
+
+  // 先处理包含模式
+  includePatterns.forEach((pattern: string) => {
+    console.error('[DEBUG] ----------------------------包含模式: ', pattern)
     const matches = glob.globSync(pattern, {
       cwd: modulePath,
       absolute: false
@@ -61,7 +73,26 @@ function getWorkspacePackages(modulePath: string): WorkspacePackage[] {
       }
     })
   })
-  return packages
+
+  // 再处理排除模式，过滤掉不需要的包
+  const filteredPackages = packages.filter((pkg) => {
+    const shouldExclude = excludePatterns.some((excludePattern) => {
+      console.error(
+        '[DEBUG] --------------------检查排除模式: ',
+        excludePattern,
+        ' vs ',
+        pkg.name
+      )
+      // 直接字符串匹配检查是否匹配排除模式
+      return pkg.name === excludePattern
+    })
+    if (shouldExclude) {
+      console.error('[DEBUG] --------------------排除包: ', pkg.name)
+    }
+    return !shouldExclude
+  })
+
+  return filteredPackages
 }
 
 /**

@@ -1,3 +1,6 @@
+import { execSync } from 'child_process'
+import fs from 'fs'
+import path from 'path'
 import {
   buildModules,
   getCachedBuildModules,
@@ -14,9 +17,6 @@ import {
   UMD_SKIP_CHECK_FILES
 } from '../consts/index.ts'
 import { SYNC_MODIFIED_MODULE_MESSAGES } from '../consts/sync-modified-module.ts'
-import { execSync } from 'child_process'
-import fs from 'fs'
-import path from 'path'
 
 /**
  * 替换消息模板中的占位符
