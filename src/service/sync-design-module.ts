@@ -5,24 +5,24 @@ import { SYNC_DESIGN_MODULE_SERVICE_MESSAGES } from '../consts/sync-design-modul
 import { ERROR_MESSAGES } from '../consts/index.ts'
 
 /**
- * 全局互斥标志位：标识是否有同步静态资源操作正在执行
+ * 全局互斥标志位：标识是否有同步设计模块操作正在执行
  */
-let isSyncingAssetsInProgress = false
+let isSyncingDesignModule = false
 
 /**
  * 重置全局变量
  * 用于清理进程退出或MCP被禁用时的互斥状态
  */
-export function resetSyncDesignStaticAssetsServiceGlobals(): void {
-  isSyncingAssetsInProgress = false
+export function resetSyncDesignModuleServiceGlobals(): void {
+  isSyncingDesignModule = false
 }
 
 /**
- * 注册同步设计态静态资源工具
+ * 注册同步设计模块工具
  * 用于同步设计态的静态资源文件到项目中
  * 使用全局互斥标志位防止并发执行
  */
-export function registerSyncDesignModel(server: McpServer): void {
+export function registerSyncDesignModule(server: McpServer): void {
   server.registerTool(
     'sync-design-module',
     {
@@ -32,8 +32,8 @@ export function registerSyncDesignModel(server: McpServer): void {
     },
     () => {
       try {
-        // 检查是否有同步静态资源操作正在执行
-        if (isSyncingAssetsInProgress) {
+        // 检查是否有同步设计模块操作正在执行
+        if (isSyncingDesignModule) {
           console.error(
             SYNC_DESIGN_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING
           )
@@ -56,7 +56,7 @@ export function registerSyncDesignModel(server: McpServer): void {
         }
 
         // 设置互斥标志位
-        isSyncingAssetsInProgress = true
+        isSyncingDesignModule = true
         console.error(SYNC_DESIGN_MODULE_SERVICE_MESSAGES.TASK_START)
 
         // 清空日志缓冲区，准备收集新的日志
@@ -126,7 +126,7 @@ export function registerSyncDesignModel(server: McpServer): void {
         }
       } finally {
         // 无论成功还是失败，都重置互斥标志位
-        isSyncingAssetsInProgress = false
+        isSyncingDesignModule = false
         console.error(SYNC_DESIGN_MODULE_SERVICE_MESSAGES.TASK_END)
       }
     }

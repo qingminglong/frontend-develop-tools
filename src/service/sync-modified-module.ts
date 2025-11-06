@@ -7,14 +7,14 @@ import { ERROR_MESSAGES } from '../consts/index.ts'
 /**
  * 全局互斥标志位：标识是否有同步修改代码操作正在执行
  */
-let isSyncModifyingInProgress = false
+let isSyncModifying = false
 
 /**
  * 重置全局变量
  * 用于清理进程退出或MCP被禁用时的互斥状态
  */
 export function resetSyncModifyCodeServiceGlobals(): void {
-  isSyncModifyingInProgress = false
+  isSyncModifying = false
 }
 
 /**
@@ -33,7 +33,7 @@ export function registerSyncModifyCode(server: McpServer): void {
     () => {
       try {
         // 检查是否有同步修改操作正在执行
-        if (isSyncModifyingInProgress) {
+        if (isSyncModifying) {
           console.error(
             SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING
           )
@@ -56,7 +56,7 @@ export function registerSyncModifyCode(server: McpServer): void {
         }
 
         // 设置互斥标志位
-        isSyncModifyingInProgress = true
+        isSyncModifying = true
         console.error(SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_START)
 
         // 清空日志缓冲区，准备收集新的日志
@@ -126,7 +126,7 @@ export function registerSyncModifyCode(server: McpServer): void {
         }
       } finally {
         // 无论成功还是失败，都重置互斥标志位
-        isSyncModifyingInProgress = false
+        isSyncModifying = false
         console.error(SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_END)
       }
     }

@@ -8,14 +8,14 @@ import { SYNC_SINGLE_MODULE_SERVICE_MESSAGES } from '../consts/sync-single-modul
 /**
  * 全局互斥标志位：标识是否有同步单个模块操作正在执行
  */
-let isSyncSingleModuleInProgress = false
+let isSyncSingleModule = false
 
 /**
  * 重置全局变量
  * 用于清理进程退出或MCP被禁用时的互斥状态
  */
 export function resetSyncSingleModuleServiceGlobals(): void {
-  isSyncSingleModuleInProgress = false
+  isSyncSingleModule = false
 }
 
 /**
@@ -65,7 +65,7 @@ export function registerSyncSingleModule(server: McpServer): void {
         }
 
         // 检查是否有同步单个模块操作正在执行
-        if (isSyncSingleModuleInProgress) {
+        if (isSyncSingleModule) {
           console.error(
             SYNC_SINGLE_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING
           )
@@ -88,7 +88,7 @@ export function registerSyncSingleModule(server: McpServer): void {
         }
 
         // 设置互斥标志位
-        isSyncSingleModuleInProgress = true
+        isSyncSingleModule = true
         console.error(SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_START)
 
         // 清空日志缓冲区，准备收集新的日志
@@ -166,7 +166,7 @@ export function registerSyncSingleModule(server: McpServer): void {
         }
       } finally {
         // 无论成功还是失败，都重置互斥标志位
-        isSyncSingleModuleInProgress = false
+        isSyncSingleModule = false
         console.error(SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_END)
         console.error(
           '🚀 ~ registerSyncSingleModule ~ args.userInput:',
