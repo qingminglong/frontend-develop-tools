@@ -58,3 +58,46 @@ export function flushLogBuffer(): string {
   clearLogBuffer()
   return logs
 }
+
+/**
+ * 创建错误响应的工具函数
+ * @param message - 错误消息
+ * @param options - 可选配置
+ * @param options.indent - JSON格式化的缩进空格数，默认为2
+ * @param options.isError - 是否标记为错误，默认为false
+ * @param options.extraMessage - 附加的消息，会拼接到message后面
+ * @returns MCP工具响应格式的错误内容
+ */
+export function createErrorResponse(
+  message: string,
+  options: {
+    indent?: number
+    isError?: boolean
+    extraMessage?: string
+  } = {}
+): any {
+  const { indent = 2, isError = false, extraMessage = '' } = options
+  const fullMessage = extraMessage ? `${message}${extraMessage}` : message
+
+  const response: any = {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify(
+          {
+            success: false,
+            message: fullMessage
+          },
+          null,
+          indent
+        )
+      }
+    ]
+  }
+
+  if (isError) {
+    response.isError = true
+  }
+
+  return response
+}

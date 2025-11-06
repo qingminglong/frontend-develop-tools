@@ -1,7 +1,11 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { syncSingleModule } from '../domain/sync-single-module.ts'
-import { clearLogBuffer, flushLogBuffer } from '../utils/index.ts'
+import {
+  clearLogBuffer,
+  flushLogBuffer,
+  createErrorResponse
+} from '../utils/index.ts'
 import { ERROR_MESSAGES } from '../consts/index.ts'
 import { SYNC_SINGLE_MODULE_SERVICE_MESSAGES } from '../consts/sync-single-module.ts'
 
@@ -46,22 +50,10 @@ export function registerSyncSingleModule(server: McpServer): void {
             ? SYNC_SINGLE_MODULE_SERVICE_MESSAGES.MISSING_INPUT
             : SYNC_SINGLE_MODULE_SERVICE_MESSAGES.INVALID_INPUT
           console.error(errorMessage)
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(
-                  {
-                    success: false,
-                    message: `${errorMessage}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-                  },
-                  null,
-                  2
-                )
-              }
-            ],
-            isError: true
-          }
+          return createErrorResponse(errorMessage, {
+            isError: true,
+            extraMessage: ERROR_MESSAGES.TASK_TERMINATION_NOTICE
+          })
         }
 
         // 检查是否有同步单个模块操作正在执行
@@ -69,22 +61,9 @@ export function registerSyncSingleModule(server: McpServer): void {
           console.error(
             SYNC_SINGLE_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING
           )
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(
-                  {
-                    success: false,
-                    message:
-                      SYNC_SINGLE_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
-                  },
-                  null,
-                  2
-                )
-              }
-            ]
-          }
+          return createErrorResponse(
+            SYNC_SINGLE_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
+          )
         }
 
         // 设置互斥标志位

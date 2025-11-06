@@ -1,6 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { buildModules } from '../domain/build-modules.ts'
-import { clearLogBuffer, flushLogBuffer } from '../utils/index.ts'
+import {
+  clearLogBuffer,
+  flushLogBuffer,
+  createErrorResponse
+} from '../utils/index.ts'
 import {
   BUILD_MODULES_SERVICE_MESSAGES,
   ERROR_MESSAGES
@@ -39,22 +43,9 @@ export function registerBuildModules(server: McpServer): void {
           console.error(
             BUILD_MODULES_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING
           )
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(
-                  {
-                    success: false,
-                    message:
-                      BUILD_MODULES_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
-                  },
-                  null,
-                  2
-                )
-              }
-            ]
-          }
+          return createErrorResponse(
+            BUILD_MODULES_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
+          )
         }
 
         // 设置互斥标志位
