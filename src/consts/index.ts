@@ -252,3 +252,39 @@ export const UMD_SKIP_CHECK_FILES = {
   APP_HTML: 'app.html',
   PREVIEW_HTML: 'preview.html'
 } as const
+
+/**
+ * 脚本和构建相关常量
+ */
+export const SCRIPTS_DIRS = {
+  SCRIPTS: 'scripts'
+} as const
+
+export const SCRIPT_FILES = {
+  POSTINSTALL: 'postinstall.js'
+} as const
+
+/**
+ * 包管理器构建命令常量
+ */
+export const BUILD_COMMANDS = {
+  PNPM_RUN_BUILD: 'pnpm run build'
+} as const
+
+/**
+ * 超时时间常量（毫秒）
+ */
+export const TIMEOUTS = {
+  BUILD_TIMEOUT: 600000 // 10分钟
+} as const
+
+/**
+ * 正则表达式常量
+ */
+export const REGEX_PATTERNS = {
+  // 匹配 @scope/package-name 格式的包名
+  SCOPED_PACKAGE: /@[\w-]+\/[\w-]+/,
+  // 匹配普通包名（如 lodash、vue 等）
+  SIMPLE_PACKAGE:
+    /(?:同步|模块|修改|内容|\s)*([a-zA-Z][\w-]*?)(?:模块|下修改内容|\s|$)/
+} as const

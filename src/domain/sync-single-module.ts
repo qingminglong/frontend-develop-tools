@@ -8,9 +8,15 @@ import {
   UMD_SKIP_CHECK_FILES,
   FILE_NAMES,
   ENCODINGS,
-  PACKAGE_FIELDS
+  PACKAGE_FIELDS,
+  SCRIPTS_DIRS,
+  SCRIPT_FILES,
+  BUILD_COMMANDS,
+  TIMEOUTS,
+  REGEX_PATTERNS
 } from '../consts/index.ts'
 import { SYNC_MODIFIED_MODULE_MESSAGES } from '../consts/sync-modified-module.ts'
+import { SYNC_SINGLE_MODULE_DOMAIN_MESSAGES } from '../consts/sync-single-module.ts'
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
@@ -51,7 +57,7 @@ export function resetSyncSingleModuleGlobals(): void {
  */
 function extractModuleName(userInput: string): string | null {
   // 正则匹配 @scope/package-name 格式的包名
-  const scopedPackageRegex = /@[\w-]+\/[\w-]+/
+  const scopedPackageRegex = REGEX_PATTERNS.SCOPED_PACKAGE
   const match = userInput.match(scopedPackageRegex)
 
   if (match) {
@@ -60,8 +66,7 @@ function extractModuleName(userInput: string): string | null {
 
   // 如果没有匹配到 scoped package，尝试匹配普通包名
   // 例如：lodash、vue 等
-  const simplePackageRegex =
-    /(?:同步|模块|修改|内容|\s)*([a-zA-Z][\w-]*?)(?:模块|下修改内容|\s|$)/
+  const simplePackageRegex = REGEX_PATTERNS.SIMPLE_PACKAGE
   const simpleMatch = userInput.match(simplePackageRegex)
 
   if (simpleMatch && simpleMatch[1]) {
@@ -82,7 +87,14 @@ function getPackageName(packageJsonPath: string): string | null {
     const pkg = JSON.parse(content)
     return pkg[PACKAGE_FIELDS.NAME] || null
   } catch (error) {
-    logToChat(`   ⚠️ 读取 package.json 失败: ${packageJsonPath}`)
+    logToChat(
+      formatMessage(
+        SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.PACKAGE_JSON_READ_FAILED,
+        {
+          path: packageJsonPath
+        }
+      )
+    )
     return null
   }
 }
@@ -96,7 +108,7 @@ function findModuleInConfiguration(moduleName: string): ModuleInfo | null {
   const { modulePaths } = configuration
 
   if (!modulePaths || modulePaths.length === 0) {
-    logToChat('⚠️ 配置中未找到模块路径 (modulePaths)')
+    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CONFIG_MODULES_NOT_FOUND)
     return null
   }
 
@@ -107,11 +119,20 @@ function findModuleInConfiguration(moduleName: string): ModuleInfo | null {
       const packages = getWorkspacePackages(modulePath)
 
       if (packages.length === 0) {
-        logToChat(`   ⚠️ 跳过 ${modulePath}: 未找到工作区包`)
+        logToChat(
+          formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SKIP_MODULE_PATH, {
+            path: modulePath
+          })
+        )
         continue
       }
 
-      logToChat(`   📦 在 ${modulePath} 中找到 ${packages.length} 个包`)
+      logToChat(
+        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.PACKAGES_FOUND, {
+          path: modulePath,
+          count: packages.length
+        })
+      )
 
       // 在所有包中查找匹配的模块
       for (const pkg of packages) {
@@ -123,7 +144,15 @@ function findModuleInConfiguration(moduleName: string): ModuleInfo | null {
 
         // 大小写不敏感比较
         if (packageName.toLowerCase() === moduleName.toLowerCase()) {
-          logToChat(`   ✅ 找到匹配的模块: ${packageName} (路径: ${pkg.path})`)
+          logToChat(
+            formatMessage(
+              SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_MATCH_FOUND,
+              {
+                packageName,
+                path: pkg.path
+              }
+            )
+          )
           return {
             moduleName: packageName,
             modulePath: pkg.path
@@ -152,10 +181,22 @@ function cacheModuleInfo(moduleInfo: ModuleInfo): void {
   // 初始化或清空该项目的缓存
   singleModulesInfosDetail[projectPath] = [moduleInfo]
 
-  logToChat(`📦 模块信息已缓存到全局变量`)
-  logToChat(`   项目路径: ${projectPath}`)
-  logToChat(`   模块名: ${moduleInfo.moduleName}`)
-  logToChat(`   模块路径: ${moduleInfo.modulePath}`)
+  logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_CACHED)
+  logToChat(
+    formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CACHE_PROJECT_PATH, {
+      path: projectPath
+    })
+  )
+  logToChat(
+    formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CACHE_MODULE_NAME, {
+      moduleName: moduleInfo.moduleName
+    })
+  )
+  logToChat(
+    formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CACHE_MODULE_PATH, {
+      path: moduleInfo.modulePath
+    })
+  )
 }
 
 /**
@@ -411,10 +452,21 @@ function syncUmdFiles(
     )
 
     // 3. 检查 scripts/postinstall.js 文件
-    const postinstallPath = path.join(modulePath, 'scripts', 'postinstall.js')
+    const postinstallPath = path.join(
+      modulePath,
+      SCRIPTS_DIRS.SCRIPTS,
+      SCRIPT_FILES.POSTINSTALL
+    )
 
     if (!fs.existsSync(postinstallPath)) {
-      logToChat(`未找到 postinstall.js 文件: ${postinstallPath}，跳过 UMD 同步`)
+      logToChat(
+        formatMessage(
+          SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.POSTINSTALL_NOT_FOUND,
+          {
+            path: postinstallPath
+          }
+        )
+      )
       return 0
     }
 
@@ -422,7 +474,7 @@ function syncUmdFiles(
     const postinstallContent = fs.readFileSync(postinstallPath, 'utf8')
 
     if (!postinstallContent || postinstallContent.trim().length === 0) {
-      logToChat('postinstall.js 文件为空，跳过 UMD 同步')
+      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.POSTINSTALL_EMPTY)
       return 0
     }
 
@@ -430,14 +482,12 @@ function syncUmdFiles(
     let targetSubPath = 'public/umd'
     if (postinstallContent.includes('public/umd/render')) {
       targetSubPath = 'public/umd/render'
-      logToChat('检测到 public/umd/render 关键字，将拷贝到该路径')
+      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.UMD_DETECT_RENDER)
     } else if (postinstallContent.includes('public/umd')) {
       targetSubPath = 'public/umd'
-      logToChat('检测到 public/umd 关键字，将拷贝到该路径')
+      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.UMD_DETECT_PUBLIC)
     } else {
-      logToChat(
-        'postinstall.js 中未找到 public/umd/render 或 public/umd 关键字，跳过 UMD 同步'
-      )
+      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.UMD_KEYWORD_NOT_FOUND)
       return 0
     }
 
@@ -447,13 +497,19 @@ function syncUmdFiles(
         const targetDir = path.join(projectPath, targetSubPath)
 
         logToChat(
-          formatMessage('准备拷贝 UMD 文件到: {path}', { path: targetDir })
+          formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.UMD_PREPARE_COPY, {
+            path: targetDir
+          })
         )
 
         // 确保目标目录存在
         if (!fs.existsSync(targetDir)) {
           fs.mkdirSync(targetDir, { recursive: true })
-          logToChat(`创建目标目录: ${targetDir}`)
+          logToChat(
+            formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.UMD_CREATE_DIR, {
+              path: targetDir
+            })
+          )
         }
 
         let filescopied = 0
@@ -490,9 +546,12 @@ function syncUmdFiles(
         }
       } catch (error) {
         logToChat(
-          formatMessage('拷贝 UMD 文件到项目失败: {path}', {
-            path: projectPath
-          }),
+          formatMessage(
+            SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.COPY_TO_PROJECT_FAILED,
+            {
+              path: projectPath
+            }
+          ),
           error instanceof Error ? error.message : String(error)
         )
       }
@@ -747,11 +806,15 @@ function buildSingleModule(): boolean {
     const allModules = Object.values(singleModulesInfosDetail).flat()
 
     if (allModules.length === 0) {
-      logToChat('⚠️ 没有需要编译的模块')
+      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.NO_MODULES_TO_BUILD)
       return false
     }
 
-    logToChat(`\n🔨 开始编译 ${allModules.length} 个模块...\n`)
+    logToChat(
+      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_MODULES_START, {
+        count: allModules.length
+      })
+    )
 
     let successCount = 0
     let failCount = 0
@@ -760,8 +823,17 @@ function buildSingleModule(): boolean {
     cachedSingleBuildModules = []
 
     for (const module of allModules) {
-      logToChat(`[1/${allModules.length}] 编译模块: ${module.moduleName}`)
-      logToChat(`   路径: ${module.modulePath}`)
+      logToChat(
+        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILDING_MODULE, {
+          total: allModules.length,
+          moduleName: module.moduleName
+        })
+      )
+      logToChat(
+        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_PATH, {
+          path: module.modulePath
+        })
+      )
 
       try {
         // 检查是否存在 package.json 和 build 脚本
@@ -771,7 +843,7 @@ function buildSingleModule(): boolean {
         )
 
         if (!fs.existsSync(packageJsonPath)) {
-          logToChat(`   ⚠️ 未找到 package.json，跳过编译`)
+          logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.PACKAGE_JSON_NOT_FOUND)
           continue
         }
 
@@ -779,24 +851,28 @@ function buildSingleModule(): boolean {
         const pkg = JSON.parse(content)
 
         if (!pkg.scripts || !pkg.scripts.build) {
-          logToChat(`   ⚠️ 未找到 scripts.build 配置，跳过编译`)
+          logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_SCRIPT_NOT_FOUND)
           continue
         }
 
         // 执行 pnpm run build 命令
-        logToChat(`   🔨 执行编译命令: pnpm run build`)
+        logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_COMMAND)
 
         const startTime = Date.now()
 
-        execSync('pnpm run build', {
+        execSync(BUILD_COMMANDS.PNPM_RUN_BUILD, {
           cwd: module.modulePath,
           stdio: 'inherit', // 将编译输出直接显示在控制台
           encoding: 'utf8',
-          timeout: 600000 // 10分钟超时
+          timeout: TIMEOUTS.BUILD_TIMEOUT // 10分钟超时
         })
 
         const duration = ((Date.now() - startTime) / 1000).toFixed(2)
-        logToChat(`   ✅ 编译成功 (耗时: ${duration}s)\n`)
+        logToChat(
+          formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_SUCCESS, {
+            duration
+          })
+        )
         successCount++
 
         // 添加到缓存的构建模块列表
@@ -807,7 +883,7 @@ function buildSingleModule(): boolean {
         })
       } catch (error) {
         logToChat(
-          `   ❌ 编译失败:`,
+          SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_FAILED,
           error instanceof Error ? error.message : String(error)
         )
         logToChat('\n')
@@ -815,22 +891,38 @@ function buildSingleModule(): boolean {
       }
     }
 
-    logToChat(`\n📊 编译统计:`)
-    logToChat(`   ✅ 成功: ${successCount}`)
-    logToChat(`   ❌ 失败: ${failCount}`)
-    logToChat(`   📦 总计: ${allModules.length}\n`)
+    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_STATS)
+    logToChat(
+      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_SUCCESS_COUNT, {
+        count: successCount
+      })
+    )
+    logToChat(
+      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_FAIL_COUNT, {
+        count: failCount
+      })
+    )
+    logToChat(
+      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_TOTAL_COUNT, {
+        count: allModules.length
+      })
+    )
 
     // 根据编译结果返回状态
     if (failCount > 0) {
-      logToChat(`❌ 编译完成，但有 ${failCount} 个模块编译失败`)
+      logToChat(
+        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_PARTIAL_FAIL, {
+          count: failCount
+        })
+      )
       return false
     }
 
-    logToChat('🎉 所有模块编译完成！\n')
+    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_ALL_SUCCESS)
     return true
   } catch (error) {
     logToChat(
-      '❌ 编译模块时出错:',
+      SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_EXCEPTION,
       error instanceof Error ? error.message : String(error)
     )
     return false
@@ -845,27 +937,37 @@ function buildSingleModule(): boolean {
  */
 export function syncSingleModule(userInput: string): boolean {
   try {
-    logToChat('🔄 开始同步指定模块的修改代码...\n')
+    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_START)
 
     // 1. 从用户输入中提取模块名
     const moduleName = extractModuleName(userInput)
 
     if (!moduleName) {
-      logToChat('❌ 无法从用户输入中提取模块名')
-      logToChat(`   用户输入: ${userInput}`)
+      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.EXTRACT_MODULE_FAILED)
       logToChat(
-        '   提示: 请确保输入包含模块名，例如 "同步@ida/ui模块下修改内容"'
+        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.USER_INPUT, {
+          input: userInput
+        })
       )
+      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.EXTRACTION_HINT)
       return false
     }
 
-    logToChat(`✅ 提取到模块名: ${moduleName}\n`)
+    logToChat(
+      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.EXTRACT_MODULE_SUCCESS, {
+        moduleName
+      })
+    )
 
     // 2. 在配置中查找模块
     const moduleInfo = findModuleInConfiguration(moduleName)
 
     if (!moduleInfo) {
-      logToChat(`❌ 在配置中未找到模块: ${moduleName}`)
+      logToChat(
+        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_NOT_FOUND, {
+          moduleName
+        })
+      )
       return false
     }
 
@@ -879,7 +981,7 @@ export function syncSingleModule(userInput: string): boolean {
     const buildResult = buildSingleModule()
 
     if (!buildResult) {
-      logToChat('❌ 同步指定模块失败：构建过程出现错误')
+      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_BUILD_FAILED)
       return false
     }
 
@@ -887,15 +989,15 @@ export function syncSingleModule(userInput: string): boolean {
     const syncResult = syncCompiledFiles()
 
     if (!syncResult) {
-      logToChat('❌ 同步指定模块失败：文件同步出现错误')
+      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_FAILED)
       return false
     }
 
-    logToChat('✅ 同步指定模块成功')
+    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_SUCCESS)
     return true
   } catch (error) {
     logToChat(
-      '❌ 同步指定模块执行异常:',
+      SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_EXCEPTION,
       error instanceof Error ? error.message : String(error)
     )
     return false
