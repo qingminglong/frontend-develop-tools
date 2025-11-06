@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { configuration } from '../domain/get-configuration.ts'
 import { ERROR_MESSAGES } from '../consts/index.ts'
+import { createErrorResponse } from '../utils/index.ts'
 
 /**
  * 注册获取配置信息工具
@@ -26,15 +27,10 @@ export function registerGetConfiguration(server: McpServer): void {
       } catch (e) {
         const errorMsg =
           e instanceof Error ? e.message : ERROR_MESSAGES.UNKNOWN_ERROR
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error: ${errorMsg}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-            }
-          ],
-          isError: true
-        }
+        return createErrorResponse(`Error: ${errorMsg}`, {
+          isError: true,
+          extraMessage: ERROR_MESSAGES.TASK_TERMINATION_NOTICE
+        })
       }
     }
   )

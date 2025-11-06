@@ -4,7 +4,9 @@ import { syncSingleModule } from '../domain/sync-single-module.ts'
 import {
   clearLogBuffer,
   flushLogBuffer,
-  createErrorResponse
+  createErrorResponse,
+  createSuccessResponse,
+  checkOperationInProgress
 } from '../utils/index.ts'
 import { ERROR_MESSAGES } from '../consts/index.ts'
 import { SYNC_SINGLE_MODULE_SERVICE_MESSAGES } from '../consts/sync-single-module.ts'
@@ -57,13 +59,13 @@ export function registerSyncSingleModule(server: McpServer): void {
         }
 
         // 检查是否有同步单个模块操作正在执行
-        if (isSyncSingleModule) {
-          console.error(
-            SYNC_SINGLE_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING
-          )
-          return createErrorResponse(
-            SYNC_SINGLE_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
-          )
+        const inProgressCheck = checkOperationInProgress(
+          isSyncSingleModule,
+          SYNC_SINGLE_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING,
+          SYNC_SINGLE_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
+        )
+        if (inProgressCheck) {
+          return inProgressCheck
         }
 
         // 设置互斥标志位
@@ -105,21 +107,9 @@ export function registerSyncSingleModule(server: McpServer): void {
         } else {
           // 成功时清空日志缓冲区
           flushLogBuffer()
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(
-                  {
-                    success: true,
-                    message: SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_SUCCESS
-                  },
-                  null,
-                  2
-                )
-              }
-            ]
-          }
+          return createSuccessResponse(
+            SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_SUCCESS
+          )
         }
       } catch (e) {
         console.error(SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_ERROR, e)

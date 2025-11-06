@@ -3,7 +3,8 @@ import { syncDesignModule } from '../domain/sync-design-module.ts'
 import {
   clearLogBuffer,
   flushLogBuffer,
-  createErrorResponse
+  createSuccessResponse,
+  checkOperationInProgress
 } from '../utils/index.ts'
 import { SYNC_DESIGN_MODULE_SERVICE_MESSAGES } from '../consts/sync-design-module.ts'
 import { ERROR_MESSAGES } from '../consts/index.ts'
@@ -37,13 +38,13 @@ export function registerSyncDesignModule(server: McpServer): void {
     () => {
       try {
         // 检查是否有同步设计模块操作正在执行
-        if (isSyncingDesignModule) {
-          console.error(
-            SYNC_DESIGN_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING
-          )
-          return createErrorResponse(
-            SYNC_DESIGN_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
-          )
+        const inProgressCheck = checkOperationInProgress(
+          isSyncingDesignModule,
+          SYNC_DESIGN_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING,
+          SYNC_DESIGN_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
+        )
+        if (inProgressCheck) {
+          return inProgressCheck
         }
 
         // 设置互斥标志位
@@ -81,21 +82,9 @@ export function registerSyncDesignModule(server: McpServer): void {
         } else {
           // 成功时清空日志缓冲区
           flushLogBuffer()
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(
-                  {
-                    success: true,
-                    message: SYNC_DESIGN_MODULE_SERVICE_MESSAGES.TASK_SUCCESS
-                  },
-                  null,
-                  2
-                )
-              }
-            ]
-          }
+          return createSuccessResponse(
+            SYNC_DESIGN_MODULE_SERVICE_MESSAGES.TASK_SUCCESS
+          )
         }
       } catch (e) {
         console.error(SYNC_DESIGN_MODULE_SERVICE_MESSAGES.TASK_ERROR, e)

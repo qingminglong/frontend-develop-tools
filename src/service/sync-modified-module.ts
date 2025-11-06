@@ -3,7 +3,8 @@ import { syncModifiedModule } from '../domain/sync-modified-module.ts'
 import {
   clearLogBuffer,
   flushLogBuffer,
-  createErrorResponse
+  createSuccessResponse,
+  checkOperationInProgress
 } from '../utils/index.ts'
 import { SYNC_MODIFIED_MODULE_SERVICE_MESSAGES } from '../consts/sync-modified-module.ts'
 import { ERROR_MESSAGES } from '../consts/index.ts'
@@ -37,13 +38,13 @@ export function registerSyncModifyCode(server: McpServer): void {
     () => {
       try {
         // 检查是否有同步修改操作正在执行
-        if (isSyncModifying) {
-          console.error(
-            SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING
-          )
-          return createErrorResponse(
-            SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
-          )
+        const inProgressCheck = checkOperationInProgress(
+          isSyncModifying,
+          SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING,
+          SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
+        )
+        if (inProgressCheck) {
+          return inProgressCheck
         }
 
         // 设置互斥标志位
@@ -81,21 +82,9 @@ export function registerSyncModifyCode(server: McpServer): void {
         } else {
           // 成功时清空日志缓冲区
           flushLogBuffer()
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(
-                  {
-                    success: true,
-                    message: SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_SUCCESS
-                  },
-                  null,
-                  2
-                )
-              }
-            ]
-          }
+          return createSuccessResponse(
+            SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_SUCCESS
+          )
         }
       } catch (e) {
         console.error(SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_ERROR, e)

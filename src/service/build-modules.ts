@@ -3,7 +3,8 @@ import { buildModules } from '../domain/build-modules.ts'
 import {
   clearLogBuffer,
   flushLogBuffer,
-  createErrorResponse
+  createSuccessResponse,
+  checkOperationInProgress
 } from '../utils/index.ts'
 import {
   BUILD_MODULES_SERVICE_MESSAGES,
@@ -39,13 +40,13 @@ export function registerBuildModules(server: McpServer): void {
     () => {
       try {
         // 检查是否有编译操作正在执行
-        if (isBuildingInProgress) {
-          console.error(
-            BUILD_MODULES_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING
-          )
-          return createErrorResponse(
-            BUILD_MODULES_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
-          )
+        const inProgressCheck = checkOperationInProgress(
+          isBuildingInProgress,
+          BUILD_MODULES_SERVICE_MESSAGES.OPERATION_IN_PROGRESS_WARNING,
+          BUILD_MODULES_SERVICE_MESSAGES.OPERATION_IN_PROGRESS
+        )
+        if (inProgressCheck) {
+          return inProgressCheck
         }
 
         // 设置互斥标志位
@@ -82,21 +83,9 @@ export function registerBuildModules(server: McpServer): void {
         } else {
           // 成功时清空日志缓冲区
           flushLogBuffer()
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(
-                  {
-                    success: true,
-                    message: BUILD_MODULES_SERVICE_MESSAGES.TASK_SUCCESS
-                  },
-                  null,
-                  2
-                )
-              }
-            ]
-          }
+          return createSuccessResponse(
+            BUILD_MODULES_SERVICE_MESSAGES.TASK_SUCCESS
+          )
         }
       } catch (e) {
         console.error(BUILD_MODULES_SERVICE_MESSAGES.TASK_ERROR, e)

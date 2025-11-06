@@ -60,6 +60,52 @@ export function flushLogBuffer(): string {
 }
 
 /**
+ * 创建成功响应的工具函数
+ * @param message - 成功消息
+ * @param indent - JSON格式化的缩进空格数，默认为2
+ * @returns MCP工具响应格式的成功内容
+ */
+export function createSuccessResponse(
+  message: string,
+  indent: number = 2
+): any {
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify(
+          {
+            success: true,
+            message
+          },
+          null,
+          indent
+        )
+      }
+    ]
+  }
+}
+
+/**
+ * 检查操作是否正在进行中，如果是则返回错误响应
+ * @param isInProgress - 是否正在进行中的标志
+ * @param warningMessage - 警告消息
+ * @param errorMessage - 错误消息
+ * @returns 如果正在进行中则返回错误响应，否则返回null
+ */
+export function checkOperationInProgress(
+  isInProgress: boolean,
+  warningMessage: string,
+  errorMessage: string
+): any | null {
+  if (isInProgress) {
+    console.error(warningMessage)
+    return createErrorResponse(errorMessage)
+  }
+  return null
+}
+
+/**
  * 创建错误响应的工具函数
  * @param message - 错误消息
  * @param options - 可选配置
