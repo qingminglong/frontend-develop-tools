@@ -34,7 +34,7 @@ let isFinished = false
 /**
  * 全局变量：缓存所有需要编译的静态资源模块列表
  */
-let cachedStaticBuildModules: BuildedModule[] = []
+let cachedDesignBuildModules: BuildedModule[] = []
 
 /**
  * 重置全局变量
@@ -43,7 +43,7 @@ let cachedStaticBuildModules: BuildedModule[] = []
 export function resetBuildModulesGlobals(): void {
   cachedBuildModules = []
   isFinished = false
-  cachedStaticBuildModules = []
+  cachedDesignBuildModules = []
 }
 
 /**
@@ -538,9 +538,9 @@ export function buildModules(): boolean {
  * 结果会被缓存到 cachedStaticBuildModules
  * @returns 需要编译的静态模块列表
  */
-export function getStaticBuildModules(): BuildedModule[] {
+export function getDesignBuildModules(): BuildedModule[] {
   // 清空缓存
-  cachedStaticBuildModules = []
+  cachedDesignBuildModules = []
 
   const staticBuildedModules: BuildedModule[] = []
 
@@ -638,7 +638,7 @@ export function getStaticBuildModules(): BuildedModule[] {
   logToChat('')
 
   // 更新缓存
-  cachedStaticBuildModules = staticBuildedModules
+  cachedDesignBuildModules = staticBuildedModules
 
   return staticBuildedModules
 }
@@ -648,7 +648,7 @@ export function getStaticBuildModules(): BuildedModule[] {
  * @returns 缓存的静态模块列表
  */
 export function getCachedStaticBuildModules(): BuildedModule[] {
-  return cachedStaticBuildModules
+  return cachedDesignBuildModules
 }
 
 /**
@@ -656,8 +656,8 @@ export function getCachedStaticBuildModules(): BuildedModule[] {
  * 调用getStaticBuildModules获取模块列表并执行编译
  * @returns 编译是否成功执行
  */
-export function buildStaticModules(): boolean {
-  const modules = getStaticBuildModules()
+export function buildDesignModules(): boolean {
+  const modules = getDesignBuildModules()
 
   if (modules.length === 0) {
     logToChat(LOG_MESSAGES.NO_MODULES_TO_BUILD)

@@ -2,7 +2,7 @@ import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import {
-  buildStaticModules,
+  buildDesignModules as buildDesignModules,
   getCachedStaticBuildModules
 } from './build-modules.ts'
 import { configuration } from './get-configuration.ts'
@@ -591,7 +591,7 @@ export function syncDesignModule(): boolean {
     logToChat(SYNC_DESIGN_MODULE_MESSAGES.SYNC_START)
 
     // 调用 buildStaticModules 执行构建
-    const isSuccess = buildStaticModules()
+    const isSuccess = buildDesignModules()
 
     if (!isSuccess) {
       logToChat(SYNC_DESIGN_MODULE_MESSAGES.SYNC_FAILED, '构建过程出现错误')
