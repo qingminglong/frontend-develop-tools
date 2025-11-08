@@ -1,7 +1,9 @@
 import { execSync } from 'child_process'
+import path from 'path'
 import type { BuildedModule } from '../types/build-modules.ts'
 import { BUILD_REASON, SPECIAL_CHARS, LOG_MESSAGES } from '../consts/index.ts'
-import { logToChat } from './index.ts'
+import { logToChat, parseWorkspacePatterns } from './index.ts'
+import { configuration } from '../domain/get-configuration.ts'
 
 /**
  * 通用的模块编译函数
@@ -75,4 +77,69 @@ export function executeBuildModules(
 
   logToChat(LOG_MESSAGES.BUILD_COMPLETE)
   return true
+}
+
+/**
+ * 获取 pnpm-workspace.yaml 中被排除的包模式列表
+ * @returns 被排除的包模式数组
+ */
+export function getExcludedModules(): string[] {
+  try {
+    const excludeModulesSet = new Set<string>()
+
+    // 遍历所有模块路径，收集排除模式
+    for (const modulePath of configuration.modulePaths) {
+      const { excludeModules } = parseWorkspacePatterns(modulePath)
+      excludeModules.forEach((pattern) => excludeModulesSet.add(pattern))
+    }
+
+    return Array.from(excludeModulesSet)
+  } catch (error) {
+    logToChat(
+      `读取 pnpm-workspace.yaml 失败: ${
+        error instanceof Error ? error.message : error
+      }`
+    )
+    return []
+  }
+}
+
+/**
+ * 检查模块是否被排除
+ * @param modulePath - 模块绝对路径
+ * @param excludeModules - 排除模式列表（相对路径）
+ * @returns 是否被排除
+ */
+export function isModuleExcluded(
+  modulePath: string,
+  excludeModules: string[]
+): boolean {
+  // 如果没有排除模式，直接返回 false
+  if (excludeModules.length === 0) {
+    return false
+  }
+
+  // 将绝对路径转换为相对于 workspace 的相对路径
+  // 找到 workspace 根目录（通常是 modulePaths 中的父目录）
+  let relativePath = modulePath
+
+  // 尝试从配置的模块路径中找到匹配的 workspace 根目录
+  for (const workspacePath of configuration.modulePaths) {
+    if (modulePath.startsWith(workspacePath)) {
+      // 计算相对于 workspace 的路径
+      relativePath = path.relative(workspacePath, modulePath)
+      // 统一路径分隔符为正斜杠（兼容不同操作系统）
+      relativePath = relativePath.replace(/\\/g, '/')
+      break
+    }
+  }
+
+  // 检查是否匹配任何排除模式
+  return excludeModules.some((excludePattern) => {
+    // 支持精确匹配和路径前缀匹配
+    return (
+      relativePath === excludePattern ||
+      relativePath.startsWith(excludePattern + '/')
+    )
+  })
 }
