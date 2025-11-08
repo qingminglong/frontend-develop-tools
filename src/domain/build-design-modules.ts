@@ -29,17 +29,17 @@ let cachedDesignBuildModules: BuildedModule[] = []
  * 获取 pnpm-workspace.yaml 中被排除的包模式列表
  * @returns 被排除的包模式数组
  */
-function getExcludedPackages(): string[] {
+function getExcludedModules(): string[] {
   try {
-    const excludePatternsSet = new Set<string>()
+    const excludeModulesSet = new Set<string>()
 
     // 遍历所有模块路径，收集排除模式
     for (const modulePath of configuration.modulePaths) {
-      const { excludePatterns } = parseWorkspacePatterns(modulePath)
-      excludePatterns.forEach((pattern) => excludePatternsSet.add(pattern))
+      const { excludeModules } = parseWorkspacePatterns(modulePath)
+      excludeModules.forEach((pattern) => excludeModulesSet.add(pattern))
     }
 
-    return Array.from(excludePatternsSet)
+    return Array.from(excludeModulesSet)
   } catch (error) {
     logToChat(
       `读取 pnpm-workspace.yaml 失败: ${
@@ -52,22 +52,41 @@ function getExcludedPackages(): string[] {
 
 /**
  * 检查模块是否被排除
- * @param moduleName - 模块名称
- * @param excludedPatterns - 排除模式列表
+ * @param modulePath - 模块绝对路径
+ * @param excludeModules - 排除模式列表（相对路径）
  * @returns 是否被排除
  */
 function isModuleExcluded(
-  moduleName: string,
-  excludedPatterns: string[]
+  modulePath: string,
+  excludeModules: string[]
 ): boolean {
-  // 将模块名称转换为相对于 workspace 的路径
-  const workspacePath = configuration.projectPaths[0]
-  const modulePath = path.relative(workspacePath, moduleName)
+  // 如果没有排除模式，直接返回 false
+  if (excludeModules.length === 0) {
+    return false
+  }
 
-  return excludedPatterns.some((pattern) => {
-    // 支持通配符匹配
-    const regex = new RegExp(pattern.replace(/\*/g, '.*').replace(/\//g, '\\/'))
-    return regex.test(modulePath) || regex.test(moduleName)
+  // 将绝对路径转换为相对于 workspace 的相对路径
+  // 找到 workspace 根目录（通常是 modulePaths 中的父目录）
+  let relativePath = modulePath
+
+  // 尝试从配置的模块路径中找到匹配的 workspace 根目录
+  for (const workspacePath of configuration.modulePaths) {
+    if (modulePath.startsWith(workspacePath)) {
+      // 计算相对于 workspace 的路径
+      relativePath = path.relative(workspacePath, modulePath)
+      // 统一路径分隔符为正斜杠（兼容不同操作系统）
+      relativePath = relativePath.replace(/\\/g, '/')
+      break
+    }
+  }
+
+  // 检查是否匹配任何排除模式
+  return excludeModules.some((excludePattern) => {
+    // 支持精确匹配和路径前缀匹配
+    return (
+      relativePath === excludePattern ||
+      relativePath.startsWith(excludePattern + '/')
+    )
   })
 }
 
@@ -271,12 +290,20 @@ function analyzeModulesToBuild(
   })
 
   // 获取被排除的包模式列表
-  const excludedPackages = getExcludedPackages()
+  const excludedModules = getExcludedModules()
+  console.error(
+    '🚀 ~ analyzeModulesToBuild ~ excludedModules:',
+    excludedModules
+  )
 
   // 过滤掉被排除的模块
   const filteredModules = Array.from(buildModulesMap.values()).filter(
     (module) => {
-      const isExcluded = isModuleExcluded(module.moduleName, excludedPackages)
+      const isExcluded = isModuleExcluded(module.modulePath, excludedModules)
+      console.error(
+        '🚀 ~ analyzeModulesToBuild ~ module.modulePath:',
+        module.modulePath
+      )
       if (isExcluded) {
         logToChat(`跳过被排除的模块: ${module.moduleName}`)
       }

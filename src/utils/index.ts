@@ -9,67 +9,14 @@ import {
   PACKAGE_FIELDS,
   SPECIAL_CHARS
 } from '../consts/index.ts'
-
-/**
- * 日志输出工具函数
- * 用于将日志输出到 Cursor 聊天页面（通过 stderr）
- */
-
-/**
- * 全局日志缓冲区，用于收集日志消息
- */
-let logBuffer: string[] = []
-
-/**
- * 输出日志到 Cursor 聊天页面
- * @param message - 日志消息
- * @param args - 额外的参数
- */
-export function logToChat(message: string, ...args: any[]): void {
-  const fullMessage =
-    args.length > 0
-      ? `${message} ${args
-          .map((arg) =>
-            typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-          )
-          .join(' ')}`
-      : message
-  console.error(fullMessage)
-  logBuffer.push(fullMessage)
-}
-
-/**
- * 输出空行到 Cursor 聊天页面
- */
-export function logEmptyLine(): void {
-  console.error()
-  logBuffer.push('')
-}
-
-/**
- * 获取所有收集的日志消息
- * @returns 日志消息数组
- */
-export function getLogBuffer(): string[] {
-  return [...logBuffer]
-}
-
-/**
- * 清空日志缓冲区
- */
-export function clearLogBuffer(): void {
-  logBuffer = []
-}
-
-/**
- * 获取日志缓冲区内容并清空
- * @returns 日志消息字符串（用换行符连接）
- */
-export function flushLogBuffer(): string {
-  const logs = logBuffer.join('\n')
-  clearLogBuffer()
-  return logs
-}
+export {
+  logToChat,
+  logEmptyLine,
+  getLogBuffer,
+  clearLogBuffer,
+  flushLogBuffer,
+  formatMessage
+} from './logger.ts'
 
 /**
  * 创建成功响应的工具函数
@@ -262,55 +209,42 @@ export function createExceptionErrorResponse(
 }
 
 /**
- * 替换消息模板中的占位符
- * @param template - 消息模板
- * @param params - 参数对象
- * @returns 替换后的消息
- */
-export function formatMessage(
-  template: string,
-  params: Record<string, string | number>
-): string {
-  return template.replace(/\{(\w+)\}/g, (_, key) => String(params[key] ?? ''))
-}
-
-/**
  * 解析 workspace 配置文件，返回包含和排除模式
  * @param modulePath - 项目根目录路径
  * @returns 包含 includePatterns 和 excludePatterns 的对象
  */
 export function parseWorkspacePatterns(modulePath: string): {
-  includePatterns: string[]
-  excludePatterns: string[]
+  includeModules: string[]
+  excludeModules: string[]
 } {
   const workspaceFile = path.join(modulePath, FILE_NAMES.WORKSPACE_CONFIG)
   // 如果不存在workspace文件，返回空数组
   if (!fs.existsSync(workspaceFile)) {
     return {
-      includePatterns: [],
-      excludePatterns: []
+      includeModules: [],
+      excludeModules: []
     }
   }
   const content = fs.readFileSync(workspaceFile, ENCODINGS.UTF8)
   const config = yaml.load(content) as WorkspaceConfig
 
   // 分离包含模式和排除模式
-  const includePatterns: string[] = []
-  const excludePatterns: string[] = []
+  const includeModules: string[] = []
+  const excludeModules: string[] = []
 
   config[PACKAGE_FIELDS.PACKAGES].forEach((pattern: string) => {
     if (pattern.startsWith(SPECIAL_CHARS.EXCLAMATION)) {
       // 排除模式，去掉前缀的 '!'
-      excludePatterns.push(pattern.slice(1))
+      excludeModules.push(pattern.slice(1))
     } else {
       // 包含模式
-      includePatterns.push(pattern)
+      includeModules.push(pattern)
     }
   })
 
   return {
-    includePatterns,
-    excludePatterns
+    includeModules,
+    excludeModules
   }
 }
 

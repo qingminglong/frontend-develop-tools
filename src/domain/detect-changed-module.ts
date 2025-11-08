@@ -26,13 +26,12 @@ export const modulesInfosDetail: Record<string, ModuleInfo[]> = {}
  * @returns 包信息数组
  */
 export function getWorkspacePackages(modulePath: string): WorkspacePackage[] {
-  const { includePatterns, excludePatterns } =
-    parseWorkspacePatterns(modulePath)
+  const { includeModules, excludeModules } = parseWorkspacePatterns(modulePath)
 
   const packages: WorkspacePackage[] = []
 
   // 先处理包含模式
-  includePatterns.forEach((pattern: string) => {
+  includeModules.forEach((pattern: string) => {
     const matches = glob.globSync(pattern, {
       cwd: modulePath,
       absolute: false,
@@ -56,7 +55,7 @@ export function getWorkspacePackages(modulePath: string): WorkspacePackage[] {
 
   // 再处理排除模式，过滤掉不需要的包
   const filteredPackages = packages.filter((pkg) => {
-    const shouldExclude = excludePatterns.some((excludePattern) => {
+    const shouldExclude = excludeModules.some((excludePattern) => {
       // 直接字符串匹配检查是否匹配排除模式
       return pkg.name === excludePattern
     })

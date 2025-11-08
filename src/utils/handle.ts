@@ -8,7 +8,7 @@ import {
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
-import { logToChat, formatMessage } from './index.ts'
+import { logToChat, formatMessage } from './logger.ts'
 
 /**
  * 检查并安装项目依赖
