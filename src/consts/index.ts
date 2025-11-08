@@ -321,3 +321,24 @@ export const PNPM_MODULE_MESSAGES = {
   TARGET_PATH_FOUND: '找到目标路径: {path}',
   FIND_MODULE_FAILED: '查找模块失败:'
 } as const
+
+/**
+ * UMD 同步消息常量
+ */
+export const UMD_SYNC_MESSAGES = {
+  UMD_DIR_NOT_FOUND: '   ℹ️  模块 {moduleName} 没有 UMD 目录，跳过',
+  UMD_DIR_FOUND: '   ✓ 找到 UMD 目录: {path}',
+  UMD_FILES_FOUND: '   📦 找到 {count} 个 UMD 文件',
+  UMD_FILE_ITEM: '      - {fileName}',
+  UMD_DIR_COPIED: '      ✅ 已拷贝 {count} 个文件到: {destPath}',
+  UMD_FILE_COPY_FAILED: '         ❌ 文件 {fileName} 拷贝失败:',
+  POSTINSTALL_NOT_FOUND: '未找到 postinstall.js 文件: {path}，跳过 UMD 同步',
+  POSTINSTALL_EMPTY: 'postinstall.js 文件为空，跳过 UMD 同步',
+  UMD_DETECT_RENDER: '检测到 public/umd/render 关键字，将拷贝到该路径',
+  UMD_DETECT_PUBLIC: '检测到 public/umd 关键字，将拷贝到该路径',
+  UMD_KEYWORD_NOT_FOUND:
+    'postinstall.js 中未找到 public/umd/render 或 public/umd 关键字，跳过 UMD 同步',
+  UMD_PREPARE_COPY: '准备拷贝 UMD 文件到: {path}',
+  UMD_CREATE_DIR: '创建目标目录: {path}',
+  COPY_TO_PROJECT_FAILED: '拷贝 UMD 文件到项目失败: {path}'
+} as const
