@@ -56,9 +56,10 @@ function shouldSkipUmdSync(projectPath: string): boolean {
 
 /**
  * 同步编译后的文件到项目依赖中
+ * @param buildedModules - 已构建的模块列表
  * @returns 是否成功
  */
-function syncCompiledFiles(): boolean {
+function syncCompiledFiles(buildedModules: any[]): boolean {
   try {
     logToChat(SYNC_MODIFIED_MODULE_MESSAGES.SYNC_START)
 
@@ -94,9 +95,7 @@ function syncCompiledFiles(): boolean {
       }
     }
 
-    // 3. 获取需要同步的模块列表
-    const buildedModules = getCachedBuildModules()
-
+    // 3. 检查需要同步的模块列表
     if (buildedModules.length === 0) {
       logToChat(SYNC_MODIFIED_MODULE_MESSAGES.NO_MODULES_TO_SYNC)
       return true
@@ -310,7 +309,8 @@ export function syncModifiedModule(): boolean {
     }
 
     // 同步编译后的文件
-    const syncResult = syncCompiledFiles()
+    const buildedModules = getCachedBuildModules()
+    const syncResult = syncCompiledFiles(buildedModules)
 
     if (!syncResult) {
       logToChat(SYNC_MODIFIED_MODULE_MESSAGES.FILE_SYNC_FAILED)
