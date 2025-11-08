@@ -1,4 +1,14 @@
 import { ERROR_MESSAGES } from '../consts/index.ts'
+import path from 'path'
+import fs from 'fs'
+import yaml from 'js-yaml'
+import type { WorkspaceConfig } from '../types/detect-changed-module.ts'
+import {
+  FILE_NAMES,
+  ENCODINGS,
+  PACKAGE_FIELDS,
+  SPECIAL_CHARS
+} from '../consts/index.ts'
 
 /**
  * 日志输出工具函数
@@ -262,6 +272,46 @@ export function formatMessage(
   params: Record<string, string | number>
 ): string {
   return template.replace(/\{(\w+)\}/g, (_, key) => String(params[key] ?? ''))
+}
+
+/**
+ * 解析 workspace 配置文件，返回包含和排除模式
+ * @param modulePath - 项目根目录路径
+ * @returns 包含 includePatterns 和 excludePatterns 的对象
+ */
+export function parseWorkspacePatterns(modulePath: string): {
+  includePatterns: string[]
+  excludePatterns: string[]
+} {
+  const workspaceFile = path.join(modulePath, FILE_NAMES.WORKSPACE_CONFIG)
+  // 如果不存在workspace文件，返回空数组
+  if (!fs.existsSync(workspaceFile)) {
+    return {
+      includePatterns: [],
+      excludePatterns: []
+    }
+  }
+  const content = fs.readFileSync(workspaceFile, ENCODINGS.UTF8)
+  const config = yaml.load(content) as WorkspaceConfig
+
+  // 分离包含模式和排除模式
+  const includePatterns: string[] = []
+  const excludePatterns: string[] = []
+
+  config[PACKAGE_FIELDS.PACKAGES].forEach((pattern: string) => {
+    if (pattern.startsWith(SPECIAL_CHARS.EXCLAMATION)) {
+      // 排除模式，去掉前缀的 '!'
+      excludePatterns.push(pattern.slice(1))
+    } else {
+      // 包含模式
+      includePatterns.push(pattern)
+    }
+  })
+
+  return {
+    includePatterns,
+    excludePatterns
+  }
 }
 
 // 重新导出从 handle.ts 导入的函数

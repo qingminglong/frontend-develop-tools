@@ -1,12 +1,10 @@
 import { execSync } from 'child_process'
 import path from 'path'
 import fs from 'fs'
-import yaml from 'js-yaml'
 import { glob } from 'glob'
 import type {
   ModuleInfo,
-  WorkspacePackage,
-  WorkspaceConfig
+  WorkspacePackage
 } from '../types/detect-changed-module.ts'
 import {
   FILE_NAMES,
@@ -17,6 +15,7 @@ import {
   ERROR_MESSAGES,
   LOG_MESSAGES
 } from '../consts/index.ts'
+import { parseWorkspacePatterns } from '../utils/index.ts'
 
 // 按项目路径缓存模块信息详情
 export const modulesInfosDetail: Record<string, ModuleInfo[]> = {}
@@ -27,27 +26,8 @@ export const modulesInfosDetail: Record<string, ModuleInfo[]> = {}
  * @returns 包信息数组
  */
 export function getWorkspacePackages(modulePath: string): WorkspacePackage[] {
-  const workspaceFile = path.join(modulePath, FILE_NAMES.WORKSPACE_CONFIG)
-  // 如果不存在workspace文件，返回空数组
-  if (!fs.existsSync(workspaceFile)) {
-    return []
-  }
-  const content = fs.readFileSync(workspaceFile, ENCODINGS.UTF8)
-  const config = yaml.load(content) as WorkspaceConfig
-
-  // 分离包含模式和排除模式
-  const includePatterns: string[] = []
-  const excludePatterns: string[] = []
-
-  config[PACKAGE_FIELDS.PACKAGES].forEach((pattern: string) => {
-    if (pattern.startsWith(SPECIAL_CHARS.EXCLAMATION)) {
-      // 排除模式，去掉前缀的 '!'
-      excludePatterns.push(pattern.slice(1))
-    } else {
-      // 包含模式
-      includePatterns.push(pattern)
-    }
-  })
+  const { includePatterns, excludePatterns } =
+    parseWorkspacePatterns(modulePath)
 
   const packages: WorkspacePackage[] = []
 
