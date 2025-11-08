@@ -16,7 +16,7 @@ import {
   copyDirectory,
   findPnpmModulePath
 } from './index.ts'
-import { configuration } from '../domain/get-configuration.ts'
+import { configuration, logProjectPaths } from '../domain/get-configuration.ts'
 
 /**
  * 同步 UMD 文件到指定项目路径
@@ -215,21 +215,11 @@ export function syncCompiledFiles(
     logToChat(messages.SYNC_START)
 
     // 1. 获取项目路径列表
-    const { projectPaths } = configuration
-
-    if (!projectPaths || projectPaths.length === 0) {
-      logToChat(messages.NO_PROJECT_PATHS)
+    if (!logProjectPaths(messages)) {
       return true
     }
 
-    logToChat(
-      formatMessage(messages.PROJECT_LIST, {
-        count: projectPaths.length
-      })
-    )
-    projectPaths.forEach((p) =>
-      logToChat(formatMessage(messages.PROJECT_ITEM, { path: p }))
-    )
+    const { projectPaths } = configuration
 
     // 2. 遍历项目路径，确保依赖已安装
     logToChat(messages.CHECK_DEPENDENCIES)

@@ -1,5 +1,6 @@
 import type { ProjectConfig } from '../types/get-configuration.ts'
 import { ENV_VARS, SPECIAL_CHARS } from '../consts/index.ts'
+import { logToChat, formatMessage } from '../utils/index.ts'
 
 /**
  * 解析环境变量为字符串数组，支持多种格式
@@ -114,6 +115,36 @@ export function getConfiguration(): ProjectConfig {
   // 返回默认配置
   console.error('未找到有效的项目配置，返回空配置')
   return config
+}
+
+/**
+ * 获取并记录项目路径信息
+ * @param messages 消息常量对象
+ * @returns 是否有有效的项目路径配置
+ */
+export function logProjectPaths(messages: any): boolean {
+  // 1. 获取项目路径列表
+  const { projectPaths } = configuration
+
+  if (!projectPaths || projectPaths.length === 0) {
+    logToChat(messages.NO_PROJECT_PATHS)
+    return false
+  }
+
+  logToChat(
+    formatMessage(messages.PROJECT_LIST, {
+      count: projectPaths.length
+    })
+  )
+  projectPaths.forEach((p) =>
+    logToChat(
+      formatMessage(messages.PROJECT_ITEM, {
+        path: p
+      })
+    )
+  )
+
+  return true
 }
 
 /**

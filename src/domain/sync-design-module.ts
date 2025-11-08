@@ -5,7 +5,7 @@ import {
   getCachedStaticBuildModules
 } from './build-design-modules.ts'
 import { syncUmdFiles } from '../utils/sync.ts'
-import { configuration } from './get-configuration.ts'
+import { configuration, logProjectPaths } from './get-configuration.ts'
 import {
   logToChat,
   formatMessage,
@@ -64,25 +64,11 @@ function syncModule(): boolean {
     logToChat(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.SYNC_START)
 
     // 1. 获取项目路径列表
-    const { projectPaths } = configuration
-
-    if (!projectPaths || projectPaths.length === 0) {
-      logToChat(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.NO_PROJECT_PATHS)
+    if (!logProjectPaths(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES)) {
       return true
     }
 
-    logToChat(
-      formatMessage(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.PROJECT_LIST, {
-        count: projectPaths.length
-      })
-    )
-    projectPaths.forEach((p) =>
-      logToChat(
-        formatMessage(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.PROJECT_ITEM, {
-          path: p
-        })
-      )
-    )
+    const { projectPaths } = configuration
 
     // 2. 遍历项目路径，确保依赖已安装
     logToChat(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.CHECK_DEPENDENCIES)
