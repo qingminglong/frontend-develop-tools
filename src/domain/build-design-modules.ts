@@ -438,5 +438,5 @@ export function getCachedStaticBuildModules(): BuildedModule[] {
  */
 export function buildDesignModules(): boolean {
   const modules = getDesignBuildModules()
-  return executeBuildModules(modules, 'build:umd')
+  return executeBuildModules(modules, true)
 }

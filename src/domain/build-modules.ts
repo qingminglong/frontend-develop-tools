@@ -403,5 +403,5 @@ export function buildModules(): boolean {
   }
 
   const modules = getCachedBuildModules()
-  return executeBuildModules(modules, 'build')
+  return executeBuildModules(modules, false)
 }

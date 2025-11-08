@@ -6,12 +6,12 @@ import { logToChat } from './index.ts'
 /**
  * 通用的模块编译函数
  * @param modules - 需要编译的模块列表
- * @param buildCommand - 编译命令，如 'build' 或 'build:umd'
+ * @param isDesign - 是否为设计态编译，如果为true则执行build:umd，否则执行build
  * @returns 编译是否成功执行
  */
 export function executeBuildModules(
   modules: BuildedModule[],
-  buildCommand: string
+  isDesign: boolean
 ): boolean {
   if (modules.length === 0) {
     logToChat(LOG_MESSAGES.NO_MODULES_TO_BUILD)
@@ -34,6 +34,9 @@ export function executeBuildModules(
     logToChat(`   原因: ${reasonText}`)
 
     try {
+      // 根据isDesign确定编译命令
+      const buildCommand = isDesign ? 'build:umd' : 'build'
+
       // 执行编译命令
       logToChat(`   🔨 执行编译命令: pnpm run ${buildCommand}`)
 
