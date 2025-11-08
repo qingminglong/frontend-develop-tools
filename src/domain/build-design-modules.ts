@@ -14,7 +14,7 @@ import {
   BUILD_REASON,
   SPECIAL_CHARS
 } from '../consts/index.ts'
-import { logToChat } from '../utils/index.ts'
+import { logToChat, parseWorkspacePatterns } from '../utils/index.ts'
 import { executeBuildModules } from '../utils/build.ts'
 import { getWorkspacePackages } from './detect-changed-module.ts'
 import { glob } from 'glob'
@@ -24,6 +24,52 @@ import yaml from 'js-yaml'
  * 全局变量：缓存所有需要编译的静态资源模块列表
  */
 let cachedDesignBuildModules: BuildedModule[] = []
+
+/**
+ * 获取 pnpm-workspace.yaml 中被排除的包模式列表
+ * @returns 被排除的包模式数组
+ */
+function getExcludedPackages(): string[] {
+  try {
+    const excludePatternsSet = new Set<string>()
+
+    // 遍历所有模块路径，收集排除模式
+    for (const modulePath of configuration.modulePaths) {
+      const { excludePatterns } = parseWorkspacePatterns(modulePath)
+      excludePatterns.forEach((pattern) => excludePatternsSet.add(pattern))
+    }
+
+    return Array.from(excludePatternsSet)
+  } catch (error) {
+    logToChat(
+      `读取 pnpm-workspace.yaml 失败: ${
+        error instanceof Error ? error.message : error
+      }`
+    )
+    return []
+  }
+}
+
+/**
+ * 检查模块是否被排除
+ * @param moduleName - 模块名称
+ * @param excludedPatterns - 排除模式列表
+ * @returns 是否被排除
+ */
+function isModuleExcluded(
+  moduleName: string,
+  excludedPatterns: string[]
+): boolean {
+  // 将模块名称转换为相对于 workspace 的路径
+  const workspacePath = configuration.projectPaths[0]
+  const modulePath = path.relative(workspacePath, moduleName)
+
+  return excludedPatterns.some((pattern) => {
+    // 支持通配符匹配
+    const regex = new RegExp(pattern.replace(/\*/g, '.*').replace(/\//g, '\\/'))
+    return regex.test(modulePath) || regex.test(moduleName)
+  })
+}
 
 /**
  * 读取package.json并获取依赖信息
@@ -123,7 +169,7 @@ function getAllPackageDependencies(
  * @param allDependencyMaps - 所有项目的依赖信息映射
  * @returns 过滤后的静态模块列表
  */
-function analyzeAndFilterStaticModules(
+function analyzeAndFilterModules(
   staticModulesToBuild: ModuleInfo[],
   allDependencyMaps: Map<string, Map<string, PackageDependencyInfo>>
 ): BuildedModule[] {
@@ -213,18 +259,32 @@ function analyzeModulesToBuild(
         buildModulesMap.get(depName)?.reason === BUILD_REASON.DEPENDENT
       ) {
         // 如果已存在且是dependent，添加到dependedBy列表
-        const existing = buildModulesMap.get(depName)!
-        if (!existing.dependedBy) {
-          existing.dependedBy = []
+        const module = buildModulesMap.get(depName)!
+        if (!module.dependedBy) {
+          module.dependedBy = []
         }
-        if (!existing.dependedBy.includes(module.moduleName)) {
-          existing.dependedBy.push(module.moduleName)
+        if (!module.dependedBy.includes(module.moduleName)) {
+          module.dependedBy.push(module.moduleName)
         }
       }
     })
   })
 
-  return Array.from(buildModulesMap.values())
+  // 获取被排除的包模式列表
+  const excludedPackages = getExcludedPackages()
+
+  // 过滤掉被排除的模块
+  const filteredModules = Array.from(buildModulesMap.values()).filter(
+    (module) => {
+      const isExcluded = isModuleExcluded(module.moduleName, excludedPackages)
+      if (isExcluded) {
+        logToChat(`跳过被排除的模块: ${module.moduleName}`)
+      }
+      return !isExcluded
+    }
+  )
+
+  return filteredModules
 }
 
 /**
@@ -398,7 +458,7 @@ export function getDesignBuildModules(): BuildedModule[] {
   }
 
   // 分析并过滤静态模块
-  const finalModules = analyzeAndFilterStaticModules(
+  const finalModules = analyzeAndFilterModules(
     staticModulesToBuild,
     allDependencyMaps
   )
