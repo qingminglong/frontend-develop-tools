@@ -123,7 +123,11 @@ export const SYNC_DESIGN_MODULE_DOMAIN_MESSAGES = {
   NO_DIRS_TO_COPY: '项目 {path} 无需拷贝目录',
 
   // 同步流程相关
+  SYNC_START: '\n📦 开始同步编译后的文件...',
   SYNC_FILES_START: '开始同步编译后的文件...',
+  NO_PROJECT_PATHS: '⚠️ 未配置项目路径',
+  PROJECT_LIST: '📂 项目列表 ({count}):',
+  PROJECT_ITEM: '   - {path}',
   CHECK_DEPENDENCIES: '检查项目依赖...',
   DEPENDENCY_CHECK_FAILED: '项目 {path} 依赖检查失败',
   MODULES_TO_SYNC: '需要同步的模块 ({count}):',
@@ -131,6 +135,7 @@ export const SYNC_DESIGN_MODULE_DOMAIN_MESSAGES = {
   NO_MODULES_TO_SYNC: '没有需要同步的模块',
 
   // 统计信息
+  SYNC_STATISTICS: '\n\n📊 同步统计:',
   STAT_SUCCESS: '   ✅ 成功同步: {count}',
   STAT_MODULES: '   📦 处理模块数: {count}',
   STAT_PROJECTS: '   📂 处理项目数: {count}',
