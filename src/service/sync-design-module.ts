@@ -56,7 +56,7 @@ export function registerSyncDesignModule(server: McpServer): void {
         // 清空日志缓冲区，准备收集新的日志
         clearLogBuffer()
 
-        // 调用 domain 中的 syncDesignModule 方法
+        // ****调用 domain 中的 syncDesignModule 方法****
         const isSuccess = syncDesignModule()
 
         console.error(

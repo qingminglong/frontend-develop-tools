@@ -15,7 +15,10 @@ import {
   UMD_SKIP_CHECK_FILES
 } from '../consts/index.ts'
 import { SYNC_MODIFIED_MODULE_MESSAGES } from '../consts/sync-modified-module.ts'
-import { SYNC_DESIGN_MODULE_MESSAGES } from '../consts/sync-design-module.ts'
+import {
+  SYNC_DESIGN_MODULE_MESSAGES,
+  SYNC_DESIGN_MODULE_DOMAIN_MESSAGES
+} from '../consts/sync-design-module.ts'
 
 /**
  * 替换消息模板中的占位符
@@ -45,7 +48,7 @@ function ensureProjectDependencies(projectPath: string): boolean {
       fs.readdirSync(nodeModulesPath).length === 0
     ) {
       logToChat(
-        formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.MISSING_DEPENDENCIES, {
+        formatMessage(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.MISSING_DEPENDENCIES, {
           path: projectPath
         })
       )
@@ -54,15 +57,15 @@ function ensureProjectDependencies(projectPath: string): boolean {
         stdio: 'inherit',
         encoding: 'utf8'
       })
-      logToChat(SYNC_MODIFIED_MODULE_MESSAGES.DEPENDENCIES_INSTALLED)
+      logToChat(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.DEPENDENCIES_INSTALLED)
       return true
     }
 
-    logToChat(SYNC_MODIFIED_MODULE_MESSAGES.DEPENDENCIES_EXIST)
+    logToChat(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.DEPENDENCIES_EXIST)
     return true
   } catch (error) {
     logToChat(
-      SYNC_MODIFIED_MODULE_MESSAGES.INSTALL_FAILED,
+      SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.INSTALL_FAILED,
       error instanceof Error ? error.message : String(error)
     )
     return false
@@ -84,7 +87,7 @@ function findPnpmModulePath(
 
     if (!fs.existsSync(pnpmPath)) {
       logToChat(
-        formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.PNPM_DIR_NOT_FOUND, {
+        formatMessage(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.PNPM_DIR_NOT_FOUND, {
           path: pnpmPath
         })
       )
@@ -96,7 +99,7 @@ function findPnpmModulePath(
     const projectModulesName = moduleNames.join('+')
 
     logToChat(
-      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.SEARCHING_MODULE, {
+      formatMessage(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.SEARCHING_MODULE, {
         moduleName,
         prefix: projectModulesName
       })
@@ -110,7 +113,7 @@ function findPnpmModulePath(
 
     if (!matchedDir) {
       logToChat(
-        formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.PNPM_DIR_NOT_MATCHED, {
+        formatMessage(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.PNPM_DIR_NOT_MATCHED, {
           prefix: projectModulesName
         })
       )
@@ -118,7 +121,7 @@ function findPnpmModulePath(
     }
 
     logToChat(
-      formatMessage(SYNC_MODIFIED_MODULE_MESSAGES.PNPM_DIR_FOUND, {
+      formatMessage(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.PNPM_DIR_FOUND, {
         dir: matchedDir
       })
     )
