@@ -338,6 +338,24 @@ function buildSingleModule(): boolean {
 }
 
 /**
+ * 获取缓存的单个模块信息详情
+ * @returns 缓存的模块信息
+ */
+export function getSingleModulesInfosDetail(): Record<string, ModuleInfo[]> {
+  return singleModulesInfosDetail
+}
+
+/**
+ * 清空单个模块的缓存
+ */
+export function clearSingleModulesInfosDetail(): void {
+  Object.keys(singleModulesInfosDetail).forEach((key) => {
+    delete singleModulesInfosDetail[key]
+  })
+  cachedSingleBuildModules = []
+}
+
+/**
  * 同步指定模块的修改代码
  * 根据用户输入查找模块，然后执行构建和同步
  * @param userInput - 用户输入字符串
@@ -378,28 +396,20 @@ export function syncSingleModule(userInput: string): boolean {
       )
       return false
     }
-
-    logToChat('')
-
     // 3. 将模块信息缓存到全局变量
     cacheModuleInfo(moduleInfo)
-    logToChat('')
-
     // 4. 执行模块编译
-    const buildResult = buildSingleModule()
-
-    if (!buildResult) {
+    const isBuildSuccess = buildSingleModule()
+    if (!isBuildSuccess) {
       logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_BUILD_FAILED)
       return false
     }
-
     // 5. 同步编译后的文件
-    const syncResult = syncCompiledFiles(
+    const isSyncSuccess = syncCompiledFiles(
       cachedSingleBuildModules,
       SYNC_SINGLE_MODULE_DOMAIN_MESSAGES
     )
-
-    if (!syncResult) {
+    if (!isSyncSuccess) {
       logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_FAILED)
       return false
     }
@@ -413,22 +423,4 @@ export function syncSingleModule(userInput: string): boolean {
     )
     return false
   }
-}
-
-/**
- * 获取缓存的单个模块信息详情
- * @returns 缓存的模块信息
- */
-export function getSingleModulesInfosDetail(): Record<string, ModuleInfo[]> {
-  return singleModulesInfosDetail
-}
-
-/**
- * 清空单个模块的缓存
- */
-export function clearSingleModulesInfosDetail(): void {
-  Object.keys(singleModulesInfosDetail).forEach((key) => {
-    delete singleModulesInfosDetail[key]
-  })
-  cachedSingleBuildModules = []
 }
