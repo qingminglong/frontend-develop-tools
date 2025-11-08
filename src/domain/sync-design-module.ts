@@ -205,7 +205,7 @@ function syncUmdFiles(
  * 同步编译后的静态资源文件到项目依赖中
  * @returns 是否成功
  */
-function syncStaticCompiledFiles(): boolean {
+function syncModule(): boolean {
   try {
     logToChat(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.SYNC_START)
 
@@ -434,15 +434,15 @@ export function syncDesignModule(): boolean {
     logToChat(SYNC_DESIGN_MODULE_MESSAGES.SYNC_START)
 
     // 调用 buildStaticModules 执行构建
-    const isSuccess = buildDesignModules()
+    const isBuildSuccess = buildDesignModules()
 
-    if (!isSuccess) {
+    if (!isBuildSuccess) {
       logToChat(SYNC_DESIGN_MODULE_MESSAGES.SYNC_FAILED, '构建过程出现错误')
       return false
     }
 
     // 同步编译后的文件
-    const isSyncSuccess = syncStaticCompiledFiles()
+    const isSyncSuccess = syncModule()
 
     if (!isSyncSuccess) {
       logToChat(SYNC_DESIGN_MODULE_MESSAGES.SYNC_FAILED, '文件同步出现错误')

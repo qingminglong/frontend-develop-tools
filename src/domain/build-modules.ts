@@ -457,19 +457,15 @@ export function getCachedBuildModules(): BuildedModule[] {
 }
 
 /**
- * 执行模块编译
- * 遍历缓存的全局变量进行编译
- * 只有当 isReady 为 true 时才会执行
+ * 通用的模块编译函数
+ * @param modules - 需要编译的模块列表
+ * @param buildCommand - 编译命令，如 'build' 或 'build:umd'
  * @returns 编译是否成功执行
  */
-export function buildModules(): boolean {
-  if (!isFinished) {
-    logToChat(LOG_MESSAGES.BUILD_NOT_READY)
-    return false
-  }
-
-  const modules = getCachedBuildModules()
-
+function executeBuildModules(
+  modules: BuildedModule[],
+  buildCommand: string
+): boolean {
   if (modules.length === 0) {
     logToChat(LOG_MESSAGES.NO_MODULES_TO_BUILD)
     return true
@@ -491,16 +487,16 @@ export function buildModules(): boolean {
     logToChat(`   原因: ${reasonText}`)
 
     try {
-      // 执行 pnpm run build 命令
-      logToChat(`   🔨 执行编译命令: pnpm run build`)
+      // 执行编译命令
+      logToChat(`   🔨 执行编译命令: pnpm run ${buildCommand}`)
 
       const startTime = Date.now()
 
-      execSync('pnpm run build', {
+      execSync(`pnpm run ${buildCommand}`, {
         cwd: module.modulePath,
         stdio: 'inherit', // 将编译输出直接显示在控制台
         encoding: 'utf8',
-        timeout: 600000 // 5分钟超时
+        timeout: 600000 // 10分钟超时
       })
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2)
@@ -529,6 +525,22 @@ export function buildModules(): boolean {
 
   logToChat(LOG_MESSAGES.BUILD_COMPLETE)
   return true
+}
+
+/**
+ * 执行模块编译
+ * 遍历缓存的全局变量进行编译
+ * 只有当 isReady 为 true 时才会执行
+ * @returns 编译是否成功执行
+ */
+export function buildModules(): boolean {
+  if (!isFinished) {
+    logToChat(LOG_MESSAGES.BUILD_NOT_READY)
+    return false
+  }
+
+  const modules = getCachedBuildModules()
+  return executeBuildModules(modules, 'build')
 }
 
 /**
@@ -582,7 +594,7 @@ export function getDesignBuildModules(): BuildedModule[] {
           const content = fs.readFileSync(pkg.packageJsonPath, ENCODINGS.UTF8)
           const packageJson = JSON.parse(content)
 
-          // 检查是否存在scripts['build:umd']
+          // ****检查是否存在scripts['build:umd']****
           if (!packageJson.scripts || !packageJson.scripts['build:umd']) {
             continue
           }
@@ -658,64 +670,5 @@ export function getCachedStaticBuildModules(): BuildedModule[] {
  */
 export function buildDesignModules(): boolean {
   const modules = getDesignBuildModules()
-
-  if (modules.length === 0) {
-    logToChat(LOG_MESSAGES.NO_MODULES_TO_BUILD)
-    return true
-  }
-
-  logToChat(LOG_MESSAGES.BUILD_START.replace('{count}', String(modules.length)))
-
-  let successCount = 0
-  let failCount = 0
-
-  modules.forEach((module, index) => {
-    const reasonText =
-      module.reason === BUILD_REASON.CHANGED
-        ? '直接变更'
-        : `被依赖 (${module.dependedBy?.join(SPECIAL_CHARS.COMMA + ' ') ?? ''})`
-
-    logToChat(`[${index + 1}/${modules.length}] 编译模块: ${module.moduleName}`)
-    logToChat(`   路径: ${module.modulePath}`)
-    logToChat(`   原因: ${reasonText}`)
-
-    try {
-      // 执行 pnpm run build 命令
-      logToChat(`   🔨 执行编译命令: pnpm run build:umd`)
-
-      const startTime = Date.now()
-
-      execSync('pnpm run build:umd', {
-        cwd: module.modulePath,
-        stdio: 'inherit', // 将编译输出直接显示在控制台
-        encoding: 'utf8',
-        timeout: 600000 // 10分钟超时
-      })
-
-      const duration = ((Date.now() - startTime) / 1000).toFixed(2)
-      logToChat(`   ✅ 编译成功 (耗时: ${duration}s)${SPECIAL_CHARS.NEWLINE}`)
-      successCount++
-    } catch (error) {
-      logToChat(
-        `   ❌ 编译失败:`,
-        error instanceof Error ? error.message : error
-      )
-      logToChat(SPECIAL_CHARS.NEWLINE)
-      failCount++
-    }
-  })
-
-  logToChat(`\n📊 编译统计:`)
-  logToChat(`   ✅ 成功: ${successCount}`)
-  logToChat(`   ❌ 失败: ${failCount}`)
-  logToChat(`   📦 总计: ${modules.length}\n`)
-
-  // 根据编译结果返回状态
-  if (failCount > 0) {
-    logToChat(`❌ 编译完成，但有 ${failCount} 个模块编译失败`)
-    return false
-  }
-
-  logToChat(LOG_MESSAGES.BUILD_COMPLETE)
-  return true
+  return executeBuildModules(modules, 'build:umd')
 }
