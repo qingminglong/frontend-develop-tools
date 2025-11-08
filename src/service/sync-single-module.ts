@@ -6,7 +6,8 @@ import {
   flushLogBuffer,
   createErrorResponse,
   createSuccessResponse,
-  checkOperationInProgress
+  checkOperationInProgress,
+  createTextResponse
 } from '../utils/index.ts'
 import { ERROR_MESSAGES } from '../consts/index.ts'
 import { SYNC_SINGLE_MODULE_SERVICE_MESSAGES } from '../consts/sync-single-module.ts'
@@ -95,15 +96,7 @@ export function registerSyncSingleModule(server: McpServer): void {
               : ''
           }${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
 
-          return {
-            content: [
-              {
-                type: 'text',
-                text: errorMessage
-              }
-            ],
-            isError: true
-          }
+          return createTextResponse(errorMessage, true)
         } else {
           // 成功时清空日志缓冲区
           flushLogBuffer()
@@ -124,15 +117,7 @@ export function registerSyncSingleModule(server: McpServer): void {
             : ''
         }${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
 
-        return {
-          content: [
-            {
-              type: 'text',
-              text: fullErrorMessage
-            }
-          ],
-          isError: true
-        }
+        return createTextResponse(fullErrorMessage, true)
       } finally {
         // 无论成功还是失败，都重置互斥标志位
         isSyncSingleModule = false

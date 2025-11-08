@@ -2,7 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import * as fs from 'fs'
 import { configuration } from '../domain/get-configuration.ts'
 import { ERROR_MESSAGES } from '../consts/index.ts'
-import { createErrorResponse } from '../utils/index.ts'
+import { createErrorResponse, createTextResponse } from '../utils/index.ts'
 
 /**
  * 注册检查配置路径工具
@@ -34,14 +34,7 @@ export function registerCheckConfiguration(server: McpServer): void {
           projectPaths: projectPathsStatus
         }
 
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2)
-            }
-          ]
-        }
+        return createTextResponse(JSON.stringify(result, null, 2))
       } catch (e) {
         const errorMsg =
           e instanceof Error ? e.message : ERROR_MESSAGES.UNKNOWN_ERROR

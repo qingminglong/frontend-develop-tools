@@ -4,7 +4,9 @@ import {
   clearLogBuffer,
   flushLogBuffer,
   createSuccessResponse,
-  checkOperationInProgress
+  checkOperationInProgress,
+  createDetailedErrorResponse,
+  createExceptionErrorResponse
 } from '../utils/index.ts'
 import {
   BUILD_MODULES_SERVICE_MESSAGES,
@@ -67,19 +69,11 @@ export function registerBuildModules(server: McpServer): void {
         // 如果执行失败，使用 isError: true 标记，并包含详细的日志信息
         if (!result) {
           const detailedLogs = flushLogBuffer()
-          const errorMessage = detailedLogs
-            ? `${BUILD_MODULES_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-            : `${BUILD_MODULES_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: errorMessage
-              }
-            ],
-            isError: true
-          }
+          return createDetailedErrorResponse(
+            BUILD_MODULES_SERVICE_MESSAGES.TASK_FAILED,
+            detailedLogs,
+            ERROR_MESSAGES.TASK_TERMINATION_NOTICE
+          )
         } else {
           // 成功时清空日志缓冲区
           flushLogBuffer()
@@ -90,21 +84,12 @@ export function registerBuildModules(server: McpServer): void {
       } catch (e) {
         console.error(BUILD_MODULES_SERVICE_MESSAGES.TASK_ERROR, e)
         const detailedLogs = flushLogBuffer()
-        const errorMsg =
-          e instanceof Error ? e.message : ERROR_MESSAGES.UNKNOWN_ERROR
-        const fullErrorMessage = detailedLogs
-          ? `${BUILD_MODULES_SERVICE_MESSAGES.ERROR_PREFIX}${errorMsg}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-          : `${BUILD_MODULES_SERVICE_MESSAGES.ERROR_PREFIX}${errorMsg}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: fullErrorMessage
-            }
-          ],
-          isError: true
-        }
+        return createExceptionErrorResponse(
+          BUILD_MODULES_SERVICE_MESSAGES.ERROR_PREFIX,
+          e,
+          detailedLogs,
+          ERROR_MESSAGES.TASK_TERMINATION_NOTICE
+        )
       } finally {
         // 无论成功还是失败，都重置互斥标志位
         isBuildingInProgress = false

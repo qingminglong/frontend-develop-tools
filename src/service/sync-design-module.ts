@@ -4,7 +4,9 @@ import {
   clearLogBuffer,
   flushLogBuffer,
   createSuccessResponse,
-  checkOperationInProgress
+  createSimpleErrorResponse,
+  checkOperationInProgress,
+  createDetailedErrorResponse
 } from '../utils/index.ts'
 import { SYNC_DESIGN_MODULE_SERVICE_MESSAGES } from '../consts/sync-design-module.ts'
 import { ERROR_MESSAGES } from '../consts/index.ts'
@@ -55,30 +57,22 @@ export function registerSyncDesignModule(server: McpServer): void {
         clearLogBuffer()
 
         // 调用 domain 中的 syncDesignModule 方法
-        const result = syncDesignModule()
+        const isSuccess = syncDesignModule()
 
         console.error(
-          result
+          isSuccess
             ? SYNC_DESIGN_MODULE_SERVICE_MESSAGES.TASK_SUCCESS_LOG
             : SYNC_DESIGN_MODULE_SERVICE_MESSAGES.TASK_FAILED_LOG
         )
 
         // 如果执行失败，使用 isError: true 标记，并包含详细的日志信息
-        if (!result) {
+        if (!isSuccess) {
           const detailedLogs = flushLogBuffer()
-          const errorMessage = detailedLogs
-            ? `${SYNC_DESIGN_MODULE_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-            : `${SYNC_DESIGN_MODULE_SERVICE_MESSAGES.TASK_FAILED}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: errorMessage
-              }
-            ],
-            isError: true
-          }
+          return createDetailedErrorResponse(
+            SYNC_DESIGN_MODULE_SERVICE_MESSAGES.TASK_FAILED,
+            detailedLogs,
+            ERROR_MESSAGES.TASK_TERMINATION_NOTICE
+          )
         } else {
           // 成功时清空日志缓冲区
           flushLogBuffer()
@@ -95,15 +89,7 @@ export function registerSyncDesignModule(server: McpServer): void {
           ? `${SYNC_DESIGN_MODULE_SERVICE_MESSAGES.ERROR_PREFIX}${errorMsg}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
           : `${SYNC_DESIGN_MODULE_SERVICE_MESSAGES.ERROR_PREFIX}${errorMsg}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
 
-        return {
-          content: [
-            {
-              type: 'text',
-              text: fullErrorMessage
-            }
-          ],
-          isError: true
-        }
+        return createSimpleErrorResponse(fullErrorMessage)
       } finally {
         // 无论成功还是失败，都重置互斥标志位
         isSyncingDesignModule = false

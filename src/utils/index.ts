@@ -106,6 +106,23 @@ export function checkOperationInProgress(
 }
 
 /**
+ * 创建简单错误响应的工具函数
+ * @param message - 错误消息（纯文本格式）
+ * @returns MCP工具响应格式的简单错误内容
+ */
+export function createSimpleErrorResponse(message: string): any {
+  return {
+    content: [
+      {
+        type: 'text',
+        text: message
+      }
+    ],
+    isError: true
+  }
+}
+
+/**
  * 创建错误响应的工具函数
  * @param message - 错误消息
  * @param options - 可选配置
@@ -146,4 +163,87 @@ export function createErrorResponse(
   }
 
   return response
+}
+
+/**
+ * 创建包含详细日志的错误响应
+ * @param message - 错误消息
+ * @param detailedLogs - 详细的日志信息
+ * @param taskTerminationNotice - 任务终止通知消息
+ * @returns MCP工具响应格式的错误内容
+ */
+export function createDetailedErrorResponse(
+  message: string,
+  detailedLogs: string,
+  taskTerminationNotice: string
+): any {
+  const errorMessage = detailedLogs
+    ? `${message}\n${detailedLogs}${taskTerminationNotice}`
+    : `${message}${taskTerminationNotice}`
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: errorMessage
+      }
+    ],
+    isError: true
+  }
+}
+
+/**
+ * 创建简单文本响应的工具函数
+ * @param text - 响应文本内容
+ * @param isError - 是否标记为错误，默认为false
+ * @returns MCP工具响应格式的文本内容
+ */
+export function createTextResponse(
+  text: string,
+  isError: boolean = false
+): any {
+  const response: any = {
+    content: [
+      {
+        type: 'text',
+        text
+      }
+    ]
+  }
+
+  if (isError) {
+    response.isError = true
+  }
+
+  return response
+}
+
+/**
+ * 创建包含异常处理详细信息的错误响应
+ * @param errorPrefix - 错误前缀消息
+ * @param error - 错误对象
+ * @param detailedLogs - 详细的日志信息
+ * @param taskTerminationNotice - 任务终止通知消息
+ * @returns MCP工具响应格式的错误内容
+ */
+export function createExceptionErrorResponse(
+  errorPrefix: string,
+  error: unknown,
+  detailedLogs: string,
+  taskTerminationNotice: string
+): any {
+  const errorMsg = error instanceof Error ? error.message : '未知错误'
+  const fullErrorMessage = detailedLogs
+    ? `${errorPrefix}${errorMsg}\n${detailedLogs}${taskTerminationNotice}`
+    : `${errorPrefix}${errorMsg}${taskTerminationNotice}`
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: fullErrorMessage
+      }
+    ],
+    isError: true
+  }
 }
