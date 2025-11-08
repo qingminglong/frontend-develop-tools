@@ -250,3 +250,16 @@ export function createExceptionErrorResponse(
     isError: true
   }
 }
+
+/**
+ * 替换消息模板中的占位符
+ * @param template - 消息模板
+ * @param params - 参数对象
+ * @returns 替换后的消息
+ */
+export function formatMessage(
+  template: string,
+  params: Record<string, string | number>
+): string {
+  return template.replace(/\{(\w+)\}/g, (_, key) => String(params[key] ?? ''))
+}

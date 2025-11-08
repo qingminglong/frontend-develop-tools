@@ -7,7 +7,7 @@ import {
   getAllBuildedModules
 } from './build-modules.ts'
 import { configuration } from './get-configuration.ts'
-import { logToChat } from '../utils/index.ts'
+import { logToChat, formatMessage } from '../utils/index.ts'
 import { detectChangedModules } from './detect-changed-module.ts'
 import {
   NODE_DIRS,
@@ -17,19 +17,6 @@ import {
   UMD_SKIP_CHECK_FILES
 } from '../consts/index.ts'
 import { SYNC_MODIFIED_MODULE_MESSAGES } from '../consts/sync-modified-module.ts'
-
-/**
- * 替换消息模板中的占位符
- * @param template - 消息模板
- * @param params - 参数对象
- * @returns 替换后的消息
- */
-function formatMessage(
-  template: string,
-  params: Record<string, string | number>
-): string {
-  return template.replace(/\{(\w+)\}/g, (_, key) => String(params[key] ?? ''))
-}
 
 /**
  * 检查并安装项目依赖

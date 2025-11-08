@@ -1,5 +1,5 @@
 import { configuration } from './get-configuration.ts'
-import { logToChat } from '../utils/index.ts'
+import { logToChat, formatMessage } from '../utils/index.ts'
 import {
   NODE_DIRS,
   BUILD_OUTPUT_DIRS,
@@ -196,19 +196,6 @@ function cacheModuleInfo(moduleInfo: ModuleInfo): void {
       path: moduleInfo.modulePath
     })
   )
-}
-
-/**
- * 替换消息模板中的占位符
- * @param template - 消息模板
- * @param params - 参数对象
- * @returns 替换后的消息
- */
-function formatMessage(
-  template: string,
-  params: Record<string, string | number>
-): string {
-  return template.replace(/\{(\w+)\}/g, (_, key) => String(params[key] ?? ''))
 }
 
 /**
