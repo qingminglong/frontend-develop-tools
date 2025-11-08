@@ -308,3 +308,16 @@ export const FILE_OPERATION_MESSAGES = {
   COPY_SUCCESS: '目录拷贝成功: {dirName}',
   COPY_FAILED: '目录拷贝失败: {dirName}'
 } as const
+
+/**
+ * PNPM 模块查找消息常量
+ */
+export const PNPM_MODULE_MESSAGES = {
+  PNPM_DIR_NOT_FOUND: '未找到 .pnpm 目录: {path}',
+  SEARCHING_MODULE: '正在查找模块 {moduleName} (前缀: {prefix})',
+  PNPM_DIR_NOT_MATCHED: '未找到匹配的 pnpm 目录 (前缀: {prefix})',
+  PNPM_DIR_FOUND: '找到 pnpm 目录: {dir}',
+  TARGET_DIR_NOT_EXIST: '目标目录不存在: {path}',
+  TARGET_PATH_FOUND: '找到目标路径: {path}',
+  FIND_MODULE_FAILED: '查找模块失败:'
+} as const

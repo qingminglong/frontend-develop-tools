@@ -9,7 +9,8 @@ import {
   logToChat,
   formatMessage,
   ensureProjectDependencies,
-  copyDirectory
+  copyDirectory,
+  findPnpmModulePath
 } from '../utils/index.ts'
 import {
   NODE_DIRS,
@@ -21,94 +22,6 @@ import {
   SYNC_DESIGN_MODULE_MESSAGES,
   SYNC_DESIGN_MODULE_DOMAIN_MESSAGES
 } from '../consts/sync-design-module.ts'
-
-/**
- * 查找 .pnpm 目录中的模块路径
- * @param nodeModulesPath - node_modules 路径
- * @param moduleName - 模块名称 (如 @scope/package-name)
- * @returns 目标路径或 null
- */
-function findPnpmModulePath(
-  nodeModulesPath: string,
-  moduleName: string
-): string | null {
-  try {
-    const pnpmPath = path.join(nodeModulesPath, NODE_DIRS.PNPM_DIR)
-
-    if (!fs.existsSync(pnpmPath)) {
-      logToChat(
-        formatMessage(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.PNPM_DIR_NOT_FOUND, {
-          path: pnpmPath
-        })
-      )
-      return null
-    }
-
-    // 将 @scope/package-name 拆分并转换为 @scope+package-name
-    const moduleNames = moduleName.split('/')
-    const projectModulesName = moduleNames.join('+')
-
-    logToChat(
-      formatMessage(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.SEARCHING_MODULE, {
-        moduleName,
-        prefix: projectModulesName
-      })
-    )
-
-    // 查找以 projectModulesName 为前缀的目录
-    const pnpmDirs = fs.readdirSync(pnpmPath)
-    const matchedDir = pnpmDirs.find((dir) =>
-      dir.startsWith(projectModulesName)
-    )
-
-    if (!matchedDir) {
-      logToChat(
-        formatMessage(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.PNPM_DIR_NOT_MATCHED, {
-          prefix: projectModulesName
-        })
-      )
-      return null
-    }
-
-    logToChat(
-      formatMessage(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.PNPM_DIR_FOUND, {
-        dir: matchedDir
-      })
-    )
-
-    // 构建目标路径: .pnpm/{matched}/node_modules/@scope/package-name
-    let targetPath = path.join(pnpmPath, matchedDir, NODE_DIRS.NODE_MODULES)
-
-    // 逐级查找目录
-    for (const namePart of moduleNames) {
-      targetPath = path.join(targetPath, namePart)
-      if (!fs.existsSync(targetPath)) {
-        logToChat(
-          formatMessage(
-            SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.TARGET_DIR_NOT_EXIST,
-            {
-              path: targetPath
-            }
-          )
-        )
-        return null
-      }
-    }
-
-    logToChat(
-      formatMessage(SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.TARGET_PATH_FOUND, {
-        path: targetPath
-      })
-    )
-    return targetPath
-  } catch (error) {
-    logToChat(
-      SYNC_DESIGN_MODULE_DOMAIN_MESSAGES.FIND_MODULE_FAILED,
-      error instanceof Error ? error.message : String(error)
-    )
-    return null
-  }
-}
 
 /**
  * 检查项目路径是否应该跳过 UMD 同步
