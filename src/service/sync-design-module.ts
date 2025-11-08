@@ -4,9 +4,9 @@ import {
   clearLogBuffer,
   flushLogBuffer,
   createSuccessResponse,
-  createSimpleErrorResponse,
   checkOperationInProgress,
-  createDetailedErrorResponse
+  createDetailedErrorResponse,
+  createExceptionErrorResponse
 } from '../utils/index.ts'
 import { SYNC_DESIGN_MODULE_SERVICE_MESSAGES } from '../consts/sync-design-module.ts'
 import { ERROR_MESSAGES } from '../consts/index.ts'
@@ -83,13 +83,12 @@ export function registerSyncDesignModule(server: McpServer): void {
       } catch (e) {
         console.error(SYNC_DESIGN_MODULE_SERVICE_MESSAGES.TASK_ERROR, e)
         const detailedLogs = flushLogBuffer()
-        const errorMsg =
-          e instanceof Error ? e.message : ERROR_MESSAGES.UNKNOWN_ERROR
-        const fullErrorMessage = detailedLogs
-          ? `${SYNC_DESIGN_MODULE_SERVICE_MESSAGES.ERROR_PREFIX}${errorMsg}${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-          : `${SYNC_DESIGN_MODULE_SERVICE_MESSAGES.ERROR_PREFIX}${errorMsg}${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
-
-        return createSimpleErrorResponse(fullErrorMessage)
+        return createExceptionErrorResponse(
+          SYNC_DESIGN_MODULE_SERVICE_MESSAGES.ERROR_PREFIX,
+          e,
+          detailedLogs,
+          ERROR_MESSAGES.TASK_TERMINATION_NOTICE
+        )
       } finally {
         // 无论成功还是失败，都重置互斥标志位
         isSyncingDesignModule = false

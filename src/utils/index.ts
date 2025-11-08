@@ -1,3 +1,5 @@
+import { ERROR_MESSAGES } from '../consts/index.ts'
+
 /**
  * 日志输出工具函数
  * 用于将日志输出到 Cursor 聊天页面（通过 stderr）
@@ -232,7 +234,8 @@ export function createExceptionErrorResponse(
   detailedLogs: string,
   taskTerminationNotice: string
 ): any {
-  const errorMsg = error instanceof Error ? error.message : '未知错误'
+  const errorMsg =
+    error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR
   const fullErrorMessage = detailedLogs
     ? `${errorPrefix}${errorMsg}\n${detailedLogs}${taskTerminationNotice}`
     : `${errorPrefix}${errorMsg}${taskTerminationNotice}`
