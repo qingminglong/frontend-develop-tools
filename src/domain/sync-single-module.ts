@@ -1,9 +1,13 @@
 import { configuration } from './get-configuration.ts'
-import { logToChat, formatMessage } from '../utils/index.ts'
+import {
+  logToChat,
+  formatMessage,
+  ensureProjectDependencies,
+  copyDirectory
+} from '../utils/index.ts'
 import {
   NODE_DIRS,
   BUILD_OUTPUT_DIRS,
-  PACKAGE_MANAGER_COMMANDS,
   UMD_DIRS,
   UMD_SKIP_CHECK_FILES,
   FILE_NAMES,
@@ -199,45 +203,6 @@ function cacheModuleInfo(moduleInfo: ModuleInfo): void {
 }
 
 /**
- * 检查并安装项目依赖
- * @param projectPath - 项目路径
- * @returns 是否成功
- */
-function ensureProjectDependencies(projectPath: string): boolean {
-  try {
-    const nodeModulesPath = path.join(projectPath, NODE_DIRS.NODE_MODULES)
-
-    // 检查 node_modules 是否存在且不为空
-    if (
-      !fs.existsSync(nodeModulesPath) ||
-      fs.readdirSync(nodeModulesPath).length === 0
-    ) {
-      logToChat(
-        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MISSING_DEPENDENCIES, {
-          path: projectPath
-        })
-      )
-      execSync(PACKAGE_MANAGER_COMMANDS.PNPM_INSTALL, {
-        cwd: projectPath,
-        stdio: 'inherit',
-        encoding: 'utf8'
-      })
-      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.DEPENDENCIES_INSTALLED)
-      return true
-    }
-
-    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.DEPENDENCIES_EXIST)
-    return true
-  } catch (error) {
-    logToChat(
-      SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.INSTALL_FAILED,
-      error instanceof Error ? error.message : String(error)
-    )
-    return false
-  }
-}
-
-/**
  * 查找 .pnpm 目录中的模块路径
  * @param nodeModulesPath - node_modules 路径
  * @param moduleName - 模块名称 (如 @scope/package-name)
@@ -322,40 +287,6 @@ function findPnpmModulePath(
       error instanceof Error ? error.message : String(error)
     )
     return null
-  }
-}
-
-/**
- * 拷贝目录内容
- * @param srcDir - 源目录
- * @param destDir - 目标目录
- */
-function copyDirectory(srcDir: string, destDir: string): void {
-  if (!fs.existsSync(srcDir)) {
-    logToChat(
-      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SOURCE_DIR_NOT_EXIST, {
-        path: srcDir
-      })
-    )
-    return
-  }
-
-  // 确保目标目录存在
-  if (!fs.existsSync(destDir)) {
-    fs.mkdirSync(destDir, { recursive: true })
-  }
-
-  const entries = fs.readdirSync(srcDir, { withFileTypes: true })
-
-  for (const entry of entries) {
-    const srcPath = path.join(srcDir, entry.name)
-    const destPath = path.join(destDir, entry.name)
-
-    if (entry.isDirectory()) {
-      copyDirectory(srcPath, destPath)
-    } else {
-      fs.copyFileSync(srcPath, destPath)
-    }
   }
 }
 

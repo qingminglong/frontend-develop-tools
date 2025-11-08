@@ -288,3 +288,23 @@ export const REGEX_PATTERNS = {
   SIMPLE_PACKAGE:
     /(?:同步|模块|修改|内容|\s)*([a-zA-Z][\w-]*?)(?:模块|下修改内容|\s|$)/
 } as const
+
+/**
+ * 通用依赖管理消息常量
+ */
+export const DEPENDENCY_MESSAGES = {
+  MISSING_DEPENDENCIES: '项目 {path} 缺少依赖，正在安装...',
+  DEPENDENCIES_INSTALLED: '依赖安装完成',
+  DEPENDENCIES_EXIST: '项目依赖已存在，跳过安装',
+  INSTALL_FAILED: '安装依赖失败:'
+} as const
+
+/**
+ * 通用文件操作消息常量
+ */
+export const FILE_OPERATION_MESSAGES = {
+  SOURCE_DIR_NOT_EXIST: '源目录不存在: {path}',
+  COPYING_DIR: '正在拷贝目录: {dirName}',
+  COPY_SUCCESS: '目录拷贝成功: {dirName}',
+  COPY_FAILED: '目录拷贝失败: {dirName}'
+} as const

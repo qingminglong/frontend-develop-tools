@@ -1,4 +1,13 @@
-import { ERROR_MESSAGES } from '../consts/index.ts'
+import {
+  ERROR_MESSAGES,
+  NODE_DIRS,
+  PACKAGE_MANAGER_COMMANDS,
+  DEPENDENCY_MESSAGES,
+  FILE_OPERATION_MESSAGES
+} from '../consts/index.ts'
+import { execSync } from 'child_process'
+import fs from 'fs'
+import path from 'path'
 
 /**
  * 日志输出工具函数
@@ -262,4 +271,77 @@ export function formatMessage(
   params: Record<string, string | number>
 ): string {
   return template.replace(/\{(\w+)\}/g, (_, key) => String(params[key] ?? ''))
+}
+
+/**
+ * 检查并安装项目依赖
+ * @param projectPath - 项目路径
+ * @returns 是否成功
+ */
+export function ensureProjectDependencies(projectPath: string): boolean {
+  try {
+    const nodeModulesPath = path.join(projectPath, NODE_DIRS.NODE_MODULES)
+
+    // 检查 node_modules 是否存在且不为空
+    if (
+      !fs.existsSync(nodeModulesPath) ||
+      fs.readdirSync(nodeModulesPath).length === 0
+    ) {
+      logToChat(
+        formatMessage(DEPENDENCY_MESSAGES.MISSING_DEPENDENCIES, {
+          path: projectPath
+        })
+      )
+      execSync(PACKAGE_MANAGER_COMMANDS.PNPM_INSTALL, {
+        cwd: projectPath,
+        stdio: 'inherit',
+        encoding: 'utf8'
+      })
+      logToChat(DEPENDENCY_MESSAGES.DEPENDENCIES_INSTALLED)
+      return true
+    }
+
+    logToChat(DEPENDENCY_MESSAGES.DEPENDENCIES_EXIST)
+    return true
+  } catch (error) {
+    logToChat(
+      DEPENDENCY_MESSAGES.INSTALL_FAILED,
+      error instanceof Error ? error.message : String(error)
+    )
+    return false
+  }
+}
+
+/**
+ * 拷贝目录内容
+ * @param srcDir - 源目录
+ * @param destDir - 目标目录
+ */
+export function copyDirectory(srcDir: string, destDir: string): void {
+  if (!fs.existsSync(srcDir)) {
+    logToChat(
+      formatMessage(FILE_OPERATION_MESSAGES.SOURCE_DIR_NOT_EXIST, {
+        path: srcDir
+      })
+    )
+    return
+  }
+
+  // 确保目标目录存在
+  if (!fs.existsSync(destDir)) {
+    fs.mkdirSync(destDir, { recursive: true })
+  }
+
+  const entries = fs.readdirSync(srcDir, { withFileTypes: true })
+
+  for (const entry of entries) {
+    const srcPath = path.join(srcDir, entry.name)
+    const destPath = path.join(destDir, entry.name)
+
+    if (entry.isDirectory()) {
+      copyDirectory(srcPath, destPath)
+    } else {
+      fs.copyFileSync(srcPath, destPath)
+    }
+  }
 }
