@@ -40,6 +40,78 @@ function isListCommand(userInput: string): boolean {
 }
 
 /**
+ * 处理模块过滤逻辑
+ * @param moduleNames - 要过滤的模块名，可以是字符串或字符串数组
+ * @returns 如果过滤成功返回 null，继续执行；如果出错返回错误响应
+ */
+function handleModuleFiltering(
+  moduleNames: string | string[] | undefined
+): any {
+  // 检查是否有模块名参数需要过滤
+  const hasModuleNames =
+    moduleNames &&
+    ((Array.isArray(moduleNames) && moduleNames.length > 0) ||
+      (typeof moduleNames === 'string' && moduleNames.trim() !== ''))
+
+  if (hasModuleNames) {
+    // 从输入中提取模块名列表
+    const modulesToFilter = Array.isArray(moduleNames)
+      ? moduleNames
+      : [moduleNames]
+    console.error(`Filtering modules to: ${modulesToFilter.join(', ')}`)
+
+    // 获取检测到的所有模块信息
+    const originalModulesDetail = getModulesInfosDetail()
+
+    // 过滤出指定模块名的信息
+    const filteredModulesDetail: Record<string, any[]> = {}
+
+    for (const [projectPath, modules] of Object.entries(
+      originalModulesDetail
+    )) {
+      const filteredModules = modules.filter((module) =>
+        modulesToFilter.includes(module.moduleName)
+      )
+      if (filteredModules.length > 0) {
+        filteredModulesDetail[projectPath] = filteredModules
+      }
+    }
+
+    // 如果没有找到匹配的模块，返回错误
+    const totalFilteredModules = Object.values(filteredModulesDetail).flat()
+      .length
+    if (totalFilteredModules === 0) {
+      const detailedLogs = flushLogBuffer()
+      const errorMessage = `未找到指定的模块: ${modulesToFilter.join(', ')}${
+        detailedLogs ? `\n${detailedLogs}` : ''
+      }`
+      return createDetailedErrorResponse(
+        SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_FAILED,
+        errorMessage,
+        ERROR_MESSAGES.TASK_TERMINATION_NOTICE
+      )
+    }
+
+    // 清除所有模块信息缓存，并设置过滤后的模块信息
+    clearAllModulesInfos()
+    // 重新设置过滤后的模块信息到全局缓存
+    const allModulesDetail = getModulesInfosDetail()
+    for (const [projectPath, modules] of Object.entries(
+      filteredModulesDetail
+    )) {
+      allModulesDetail[projectPath] = modules
+    }
+
+    console.error(
+      `Filtered to ${totalFilteredModules} modules from ${modulesToFilter.length} specified modules`
+    )
+  }
+
+  // 如果没有模块过滤或过滤成功，返回 null 表示继续执行
+  return null
+}
+
+/**
  * 重置全局变量
  * 用于清理进程退出或MCP被禁用时的互斥状态
  */
@@ -111,66 +183,10 @@ export function registerSyncModifyCode(server: McpServer): void {
           )
         }
 
-        // 检查是否有模块名参数需要过滤
-        const moduleNames = args.moduleName
-        const hasModuleNames =
-          moduleNames &&
-          ((Array.isArray(moduleNames) && moduleNames.length > 0) ||
-            (typeof moduleNames === 'string' && moduleNames.trim() !== ''))
-
-        if (hasModuleNames) {
-          // 从输入中提取模块名列表
-          const modulesToFilter = Array.isArray(moduleNames)
-            ? moduleNames
-            : [moduleNames]
-          console.error(`Filtering modules to: ${modulesToFilter.join(', ')}`)
-
-          // 获取检测到的所有模块信息
-          const originalModulesDetail = getModulesInfosDetail()
-
-          // 过滤出指定模块名的信息
-          const filteredModulesDetail: Record<string, any[]> = {}
-
-          for (const [projectPath, modules] of Object.entries(
-            originalModulesDetail
-          )) {
-            const filteredModules = modules.filter((module) =>
-              modulesToFilter.includes(module.moduleName)
-            )
-            if (filteredModules.length > 0) {
-              filteredModulesDetail[projectPath] = filteredModules
-            }
-          }
-
-          // 如果没有找到匹配的模块，返回错误
-          const totalFilteredModules = Object.values(
-            filteredModulesDetail
-          ).flat().length
-          if (totalFilteredModules === 0) {
-            const detailedLogs = flushLogBuffer()
-            const errorMessage = `未找到指定的模块: ${modulesToFilter.join(
-              ', '
-            )}${detailedLogs ? `\n${detailedLogs}` : ''}`
-            return createDetailedErrorResponse(
-              SYNC_MODIFIED_MODULE_SERVICE_MESSAGES.TASK_FAILED,
-              errorMessage,
-              ERROR_MESSAGES.TASK_TERMINATION_NOTICE
-            )
-          }
-
-          // 清除所有模块信息缓存，并设置过滤后的模块信息
-          clearAllModulesInfos()
-          // 重新设置过滤后的模块信息到全局缓存
-          const allModulesDetail = getModulesInfosDetail()
-          for (const [projectPath, modules] of Object.entries(
-            filteredModulesDetail
-          )) {
-            allModulesDetail[projectPath] = modules
-          }
-
-          console.error(
-            `Filtered to ${totalFilteredModules} modules from ${modulesToFilter.length} specified modules`
-          )
+        // 处理模块过滤逻辑
+        const filterResult = handleModuleFiltering(args.moduleName)
+        if (filterResult) {
+          return filterResult
         }
 
         // 获取所有已构建的模块
