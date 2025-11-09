@@ -16,9 +16,18 @@ import {
   LOG_MESSAGES
 } from '../consts/index.ts'
 import { parseWorkspacePatterns } from '../utils/index.ts'
+import { configuration } from './get-configuration.ts'
 
 // 按项目路径缓存模块信息详情
-export const modulesInfosDetail: Record<string, ModuleInfo[]> = {}
+const modulesInfosDetail: Record<string, ModuleInfo[]> = {}
+
+/**
+ * 获取模块信息详情缓存
+ * @returns 所有项目的模块信息详情对象
+ */
+export function getModulesInfosDetail(): Record<string, ModuleInfo[]> {
+  return modulesInfosDetail
+}
 
 /**
  * 从modulesPath下获取所有工作区包的信息
@@ -199,6 +208,17 @@ export function detectChangedModules(modulePath: string): ModuleInfo[] {
   })
 
   return modulesInfosDetail[modulePath]
+}
+
+/**
+ * 检测所有配置路径中的变更模块
+ * 遍历配置的所有模块路径，检测每个路径下的变更模块
+ */
+export function detectChangedModulesForAllPaths(): void {
+  // 检测变更的模块
+  for (const modulePath of configuration.modulePaths) {
+    detectChangedModules(modulePath)
+  }
 }
 
 /**
