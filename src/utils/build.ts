@@ -173,22 +173,23 @@ export function analyzeModulesToBuild(
 
   // 获取是否启用共享依赖
   const enableSharedDepend = getEnableSharedDepend()
-
-  // 获取shared目录下所有package.json的name字段
-  const sharedPackageNames = enableSharedDepend ? getSharedPackageNames() : new Set<string>()
-
-  // 过滤出filterChangedModules
-  const filterChangedModules = changedModules.filter((module) => {
-    // 如果启用了共享依赖，则排除shared目录下的包
-    if (enableSharedDepend && sharedPackageNames.has(module.moduleName)) {
-      return false
-    }
-    return true
-  })
-  console.log(
-    '🚀 ~ analyzeModulesToBuild ~ filterChangedModules:',
-    filterChangedModules
-  )
+  let filterChangedModules = changedModules
+  if (!enableSharedDepend) {
+    // 过滤出filterChangedModules
+    // 获取shared目录下所有package.json的name字段
+    const sharedPackageNames = getSharedPackageNames()
+    filterChangedModules = changedModules.filter((module) => {
+      // 如果启用了共享依赖，则排除shared目录下的包
+      if (sharedPackageNames.has(module.moduleName)) {
+        return false
+      }
+      return true
+    })
+    console.log(
+      '🚀 ~ analyzeModulesToBuild ~ filterChangedModules:',
+      filterChangedModules
+    )
+  }
 
   // 对每个变更的模块，查找依赖它的父模块
   filterChangedModules.forEach((module) => {
@@ -346,6 +347,10 @@ function getSharedPackageNames(): Set<string> {
           const stat = fs.statSync(itemPath)
 
           if (stat.isDirectory()) {
+            // 跳过node_modules目录，避免处理第三方依赖包
+            if (item === 'node_modules') {
+              continue
+            }
             // 递归查找子目录
             findPackageJsonFiles(itemPath)
           } else if (item === 'package.json') {

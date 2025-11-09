@@ -18,6 +18,7 @@ import {
 } from '../utils/index.ts'
 import { SYNC_MODIFIED_MODULE_SERVICE_MESSAGES } from '../consts/sync-modified-module.ts'
 import { ERROR_MESSAGES } from '../consts/index.ts'
+import { setEnableSharedDepend } from './build-modules.ts'
 
 /**
  * 全局互斥标志位：标识是否有同步修改代码操作正在执行
@@ -37,6 +38,16 @@ function isListCommand(userInput: string): boolean {
   const trimmed = userInput.trim().replace(/[.,!?;:]$/, '')
   const words = trimmed.split(/\s+/)
   return words.length > 0 && words[words.length - 1].toLowerCase() === 'list'
+}
+
+function isAutoCommand(userInput: string): boolean {
+  if (!userInput || typeof userInput !== 'string') {
+    return false
+  }
+  // 去除末尾的标点符号和空格，然后检查是否以auto结尾
+  const trimmed = userInput.trim().replace(/[.,!?;:]$/, '')
+  const words = trimmed.split(/\s+/)
+  return words.length > 0 && words[words.length - 1].toLowerCase() === 'auto'
 }
 
 /**
@@ -135,7 +146,7 @@ export function registerSyncModifyCode(server: McpServer): void {
           .string()
           .optional()
           .describe(
-            '用户输入，如果以list结尾则列出所有变更模块，否则从输入中提取模块名进行过滤'
+            '用户输入，如果以list结尾则列出所有变更模块，如果以auto结尾则启用共享依赖排除，否则从输入中提取模块名进行过滤'
           ),
         moduleName: z
           .union([z.string(), z.array(z.string())])
@@ -182,6 +193,9 @@ export function registerSyncModifyCode(server: McpServer): void {
             `变更模块列表已显示${detailedLogs ? `\n${detailedLogs}` : ''}`
           )
         }
+
+        const isAutoCmd = isAutoCommand(userInput)
+        setEnableSharedDepend(isAutoCmd)
 
         // 处理模块过滤逻辑
         const filterResult = handleModuleFiltering(args.moduleName)
