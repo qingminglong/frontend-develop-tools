@@ -254,3 +254,5 @@ export {
   copyDirectory,
   findPnpmModulePath
 } from './handle.ts'
+
+export * from './logger.ts'

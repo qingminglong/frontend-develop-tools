@@ -26,6 +26,18 @@ export function logToChat(message: string, ...args: any[]): void {
   logBuffer.push(fullMessage)
 }
 
+export function logToStderr(message: string, ...args: any[]): void {
+  const fullMessage =
+    args.length > 0
+      ? `${message} ${args
+          .map((arg) =>
+            typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+          )
+          .join(' ')}`
+      : message
+  process.stderr.write('[stderr] ' + fullMessage + '\n')
+}
+
 /**
  * 输出空行到 Cursor 聊天页面
  */

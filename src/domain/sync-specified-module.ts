@@ -1,5 +1,5 @@
 import { configuration } from './get-configuration.ts'
-import { logToChat, formatMessage } from '../utils/index.ts'
+import { logToChat, formatMessage, logToStderr } from '../utils/index.ts'
 import { syncCompiledFiles } from '../utils/sync.ts'
 import {
   FILE_NAMES,
@@ -15,7 +15,6 @@ import path from 'path'
 import type { ModuleInfo } from '../types/detect-changed-module.ts'
 import type { BuildedModule } from '../types/build-modules.ts'
 import { getWorkspacePackages } from './detect-changed-module.ts'
-
 /**
  * 同步结果类型
  */
@@ -92,23 +91,26 @@ export function listAllModules(): void {
     return
   }
 
-  // 为每个modulePath分别显示模块列表
-  paths.forEach((path) => {
+  // 按modulePath顺序显示模块列表
+  paths.forEach((path, index) => {
     const modules = modulesByPath[path]
 
-    logToChat(
+    logToStderr(
       formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULE_PATH_HEADER, {
         path
       })
     )
 
+    // 在第一个模块名前添加换行
+    logToStderr('')
+
     modules.forEach((moduleName) => {
-      logToChat(`   - ${moduleName}`)
+      logToStderr(moduleName)
     })
 
-    // 在不同路径之间添加空行
-    if (paths.length > 1) {
-      logToChat('')
+    // 在不同路径之间添加空行（除了最后一个路径）
+    if (index < paths.length - 1) {
+      logToStderr('')
     }
   })
 }
