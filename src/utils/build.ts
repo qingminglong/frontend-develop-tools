@@ -250,3 +250,51 @@ export function findDependentModules(
 
   return [...new Set(dependents)] // 去重
 }
+
+/**
+ * 对模块列表进行拓扑排序，确保依赖顺序正确
+ * @param modules - 需要编译的模块列表
+ * @param dependencyMap - 所有包的依赖信息
+ * @returns 排序后的模块列表（被依赖的模块在前）
+ */
+export function topologicalSort(
+  modules: BuildedModule[],
+  dependencyMap: Map<string, PackageDependencyInfo>
+): BuildedModule[] {
+  const sorted: BuildedModule[] = []
+  const visited = new Set<string>()
+  const visiting = new Set<string>()
+
+  function visit(moduleName: string, module: BuildedModule) {
+    if (visited.has(moduleName)) return
+    if (visiting.has(moduleName)) {
+      logToChat('检测到循环依赖: ' + moduleName)
+      return
+    }
+
+    visiting.add(moduleName)
+
+    // 先访问所有依赖（在modules列表中的依赖）
+    const depInfo = dependencyMap.get(moduleName)
+    if (depInfo) {
+      depInfo.dependencies.forEach((dep) => {
+        const depModule = modules.find((m) => m.moduleName === dep)
+        if (depModule && !visited.has(dep)) {
+          visit(dep, depModule)
+        }
+      })
+    }
+
+    visiting.delete(moduleName)
+    visited.add(moduleName)
+    sorted.push(module)
+  }
+
+  modules.forEach((module) => {
+    if (!visited.has(module.moduleName)) {
+      visit(module.moduleName, module)
+    }
+  })
+
+  return sorted
+}
