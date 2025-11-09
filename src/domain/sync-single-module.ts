@@ -6,8 +6,7 @@ import {
   ENCODINGS,
   PACKAGE_FIELDS,
   BUILD_COMMANDS,
-  TIMEOUTS,
-  REGEX_PATTERNS
+  TIMEOUTS
 } from '../consts/index.ts'
 import { SYNC_SINGLE_MODULE_DOMAIN_MESSAGES } from '../consts/sync-single-module.ts'
 import { execSync } from 'child_process'
@@ -16,6 +15,15 @@ import path from 'path'
 import type { ModuleInfo } from '../types/detect-changed-module.ts'
 import type { BuildedModule } from '../types/build-modules.ts'
 import { getWorkspacePackages } from './detect-changed-module.ts'
+
+/**
+ * 同步结果类型
+ */
+export interface SyncResult {
+  success: boolean
+  partialSuccess: boolean
+  message: string
+}
 /**
  * 全局变量：缓存单个指定模块的信息详情
  * 结构与 modulesInfosDetail 相同
@@ -37,36 +45,6 @@ export function resetSyncSingleModuleGlobals(): void {
     delete singleModulesInfosDetail[key]
   })
   cachedSingleBuildModules = []
-}
-
-/**
- * 从用户输入中提取模块名
- * 支持多种格式：
- * - "同步@ida/ui模块下修改内容"
- * - "同步 @ida/ui 模块下修改内容"
- * - "@ida/ui"
- * @param userInput - 用户输入字符串
- * @returns 提取的模块名，如果未找到返回 null
- */
-function extractModuleName(userInput: string): string | null {
-  // 正则匹配 @scope/package-name 格式的包名
-  const scopedPackageRegex = REGEX_PATTERNS.SCOPED_PACKAGE
-  const match = userInput.match(scopedPackageRegex)
-
-  if (match) {
-    return match[0]
-  }
-
-  // 如果没有匹配到 scoped package，尝试匹配普通包名
-  // 例如：lodash、vue 等
-  const simplePackageRegex = REGEX_PATTERNS.SIMPLE_PACKAGE
-  const simpleMatch = userInput.match(simplePackageRegex)
-
-  if (simpleMatch && simpleMatch[1]) {
-    return simpleMatch[1]
-  }
-
-  return null
 }
 
 /**
@@ -185,37 +163,6 @@ export function listAllModules(): void {
 }
 
 /**
- * 处理模块名称提取结果
- * @param moduleName - 提取的模块名称
- * @param userInput - 用户输入字符串
- * @returns 提取成功的模块名称，如果提取失败则返回 null
- */
-function extractionModuleLogToChat(
-  moduleName: string | null,
-  userInput: string
-): void {
-  if (!moduleName) {
-    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.EXTRACT_MODULE_FAILED)
-    logToChat(
-      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.USER_INPUT, {
-        input: userInput
-      })
-    )
-    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.EXTRACTION_HINT)
-    // 当无法提取模块名时，列出所有可用模块
-    logToChat('')
-    listAllModules()
-    return
-  }
-
-  logToChat(
-    formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.EXTRACT_MODULE_SUCCESS, {
-      moduleName
-    })
-  )
-}
-
-/**
  * 从package.json中读取name属性
  * @param packageJsonPath - package.json文件路径
  * @returns package.json的name属性
@@ -310,32 +257,56 @@ function findModuleInConfiguration(moduleName: string): ModuleInfo | null {
 }
 
 /**
- * 将模块信息存入全局变量 singleModulesInfosDetail
- * @param moduleInfo - 模块信息
+ * 将多个模块信息存入全局变量 singleModulesInfosDetail
+ * @param moduleInfos - 模块信息数组
  */
-function cacheModuleInfo(moduleInfo: ModuleInfo): void {
-  // 使用项目根路径作为 key（这里使用模块所在的父级目录）
-  const projectPath = path.dirname(path.dirname(moduleInfo.modulePath))
+function cacheMultipleModuleInfo(moduleInfos: ModuleInfo[]): void {
+  // 按项目路径分组模块
+  const modulesByProject: Record<string, ModuleInfo[]> = {}
 
-  // 初始化或清空该项目的缓存
-  singleModulesInfosDetail[projectPath] = [moduleInfo]
+  for (const moduleInfo of moduleInfos) {
+    const projectPath = path.dirname(path.dirname(moduleInfo.modulePath))
+    if (!modulesByProject[projectPath]) {
+      modulesByProject[projectPath] = []
+    }
+    modulesByProject[projectPath].push(moduleInfo)
+  }
 
-  logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_CACHED)
-  logToChat(
-    formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CACHE_PROJECT_PATH, {
-      path: projectPath
-    })
-  )
-  logToChat(
-    formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CACHE_MODULE_NAME, {
-      moduleName: moduleInfo.moduleName
-    })
-  )
-  logToChat(
-    formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CACHE_MODULE_PATH, {
-      path: moduleInfo.modulePath
-    })
-  )
+  // 清空之前的所有缓存
+  Object.keys(singleModulesInfosDetail).forEach((key) => {
+    delete singleModulesInfosDetail[key]
+  })
+
+  // 缓存新的模块信息
+  for (const [projectPath, modules] of Object.entries(modulesByProject)) {
+    singleModulesInfosDetail[projectPath] = modules
+
+    logToChat(
+      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CACHE_PROJECT_PATH, {
+        path: projectPath
+      })
+    )
+    logToChat(
+      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CACHE_MODULES_COUNT, {
+        count: modules.length
+      })
+    )
+
+    for (const module of modules) {
+      logToChat(
+        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CACHE_MODULE_NAME, {
+          moduleName: module.moduleName
+        })
+      )
+      logToChat(
+        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CACHE_MODULE_PATH, {
+          path: module.modulePath
+        })
+      )
+    }
+  }
+
+  logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULES_CACHED)
 }
 
 /**
@@ -352,16 +323,24 @@ function cacheModuleInfo(moduleInfo: ModuleInfo): void {
 
 /**
  * 构建单个指定模块
- * @returns 是否成功
+ * @returns 构建结果对象
  */
-function buildSingleModule(): boolean {
+function buildSingleModule(): {
+  success: boolean
+  partialSuccess: boolean
+  message: string
+} {
   try {
     // 获取所有缓存的模块信息
     const allModules = Object.values(singleModulesInfosDetail).flat()
 
     if (allModules.length === 0) {
       logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.NO_MODULES_TO_BUILD)
-      return false
+      return {
+        success: false,
+        partialSuccess: false,
+        message: '没有需要编译的模块'
+      }
     }
 
     logToChat(
@@ -469,17 +448,22 @@ function buildSingleModule(): boolean {
           count: failCount
         })
       )
-      return false
+      const message = `编译完成，但有 ${failCount} 个模块编译失败，成功 ${successCount} 个`
+      return { success: false, partialSuccess: successCount > 0, message }
     }
 
     logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_ALL_SUCCESS)
-    return true
+    return { success: true, partialSuccess: false, message: '' }
   } catch (error) {
     logToChat(
       SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_EXCEPTION,
       error instanceof Error ? error.message : String(error)
     )
-    return false
+    return {
+      success: false,
+      partialSuccess: false,
+      message: error instanceof Error ? error.message : String(error)
+    }
   }
 }
 
@@ -503,55 +487,138 @@ export function clearSingleModulesInfosDetail(): void {
 
 /**
  * 同步指定模块的修改代码
- * 根据用户输入查找模块，然后执行构建和同步
- * @param userInput - 用户输入字符串
- * @returns 同步是否成功执行
+ * 根据模块名数组查找模块，然后执行构建和同步
+ * @param modules - 模块名数组
+ * @returns 同步结果对象
  */
-export function syncSingleModule(userInput: string): boolean {
+export function syncSingleModule(modules: string[]): SyncResult {
   try {
     logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_START)
 
-    // 1. 从用户输入中提取模块名
-    const moduleName = extractModuleName(userInput)
-    extractionModuleLogToChat(moduleName, userInput)
-    if (!moduleName) {
-      return false
+    if (modules.length === 0) {
+      return {
+        success: false,
+        partialSuccess: false,
+        message: '没有指定要同步的模块'
+      }
     }
-    // 2. 在配置中查找模块
-    const moduleInfo = findModuleInConfiguration(moduleName)
-    if (!moduleInfo) {
+
+    logToChat(
+      formatMessage(
+        SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.PROCESSING_MODULES_START,
+        {
+          count: modules.length
+        }
+      )
+    )
+
+    // 1. 查找所有模块信息
+    const foundModules: ModuleInfo[] = []
+    const notFoundModules: string[] = []
+
+    for (const moduleName of modules) {
       logToChat(
-        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_NOT_FOUND, {
-          moduleName: moduleName
+        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SEARCHING_MODULE, {
+          moduleName
         })
       )
-      return false
+
+      const moduleInfo = findModuleInConfiguration(moduleName)
+      if (moduleInfo) {
+        foundModules.push(moduleInfo)
+        logToChat(
+          formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_FOUND, {
+            moduleName,
+            path: moduleInfo.modulePath
+          })
+        )
+      } else {
+        notFoundModules.push(moduleName)
+        logToChat(
+          formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_NOT_FOUND, {
+            moduleName
+          })
+        )
+      }
     }
-    // 3. 将模块信息缓存到全局变量
-    cacheModuleInfo(moduleInfo)
-    // 4. 执行模块编译
-    const isBuildSuccess = buildSingleModule()
-    if (!isBuildSuccess) {
-      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_BUILD_FAILED)
-      return false
+
+    if (foundModules.length === 0) {
+      return {
+        success: false,
+        partialSuccess: false,
+        message: `未找到任何有效的模块。未找到的模块: ${notFoundModules.join(
+          ', '
+        )}`
+      }
     }
-    // 5. 同步编译后的文件
+
+    // 2. 缓存所有找到的模块信息
+    cacheMultipleModuleInfo(foundModules)
+
+    // 3. 执行模块编译
+    const buildResult = buildSingleModule()
+    if (!buildResult.success) {
+      const message =
+        notFoundModules.length > 0
+          ? `构建失败。此外，未找到的模块: ${notFoundModules.join(', ')}`
+          : '构建失败'
+      return {
+        success: false,
+        partialSuccess: false,
+        message
+      }
+    }
+
+    // 4. 同步编译后的文件
     const isSyncSuccess = syncCompiledFiles(
       cachedSingleBuildModules,
       SYNC_SINGLE_MODULE_DOMAIN_MESSAGES
     )
+
     if (!isSyncSuccess) {
-      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_FAILED)
-      return false
+      const message =
+        notFoundModules.length > 0
+          ? `同步失败。此外，未找到的模块: ${notFoundModules.join(', ')}`
+          : '同步失败'
+      return {
+        success: false,
+        partialSuccess: false,
+        message
+      }
     }
 
-    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_SUCCESS)
-    return true
+    // 5. 生成最终结果消息
+    let message = SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_SUCCESS
+    const warnings: string[] = []
+
+    if (buildResult.partialSuccess) {
+      warnings.push(`构建部分成功: ${buildResult.message}`)
+    }
+
+    if (notFoundModules.length > 0) {
+      warnings.push(`未找到的模块: ${notFoundModules.join(', ')}`)
+    }
+
+    if (warnings.length > 0) {
+      message += '\n' + warnings.join('\n')
+    }
+
+    logToChat(message)
+
+    return {
+      success: true,
+      partialSuccess: buildResult.partialSuccess || notFoundModules.length > 0,
+      message: warnings.length > 0 ? warnings.join('\n') : ''
+    }
   } catch (error) {
     logToChat(
       SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_EXCEPTION,
       error instanceof Error ? error.message : String(error)
     )
-    return false
+    return {
+      success: false,
+      partialSuccess: false,
+      message: error instanceof Error ? error.message : String(error)
+    }
   }
 }

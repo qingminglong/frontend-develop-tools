@@ -14,13 +14,47 @@ import {
   checkOperationInProgress,
   createTextResponse
 } from '../utils/index.ts'
-import { ERROR_MESSAGES } from '../consts/index.ts'
+import { ERROR_MESSAGES, REGEX_PATTERNS } from '../consts/index.ts'
 import { SYNC_SINGLE_MODULE_SERVICE_MESSAGES } from '../consts/sync-single-module.ts'
 
 /**
  * 全局互斥标志位：标识是否有同步单个模块操作正在执行
  */
 let isSyncSingleModule = false
+
+/**
+ * 从用户输入中提取多个模块名
+ * 支持多种格式：
+ * - "同步@ida/ui和@ida/components模块下修改内容"
+ * - "同步 @ida/ui @ida/components 模块下修改内容"
+ * - "@ida/ui,@ida/components"
+ * - "@ida/ui @ida/components"
+ * @param userInput - 用户输入字符串
+ * @returns 提取的模块名数组，如果未找到返回空数组
+ */
+function extractMultipleModuleNames(userInput: string): string[] {
+  const modules: string[] = []
+
+  // 首先尝试匹配所有 @scope/package-name 格式的包名
+  const scopedPackageRegex = new RegExp(REGEX_PATTERNS.SCOPED_PACKAGE, 'g')
+  let match
+  while ((match = scopedPackageRegex.exec(userInput)) !== null) {
+    modules.push(match[0])
+  }
+
+  // 如果没有找到 scoped package，尝试匹配普通包名
+  if (modules.length === 0) {
+    const simplePackageRegex = new RegExp(REGEX_PATTERNS.SIMPLE_PACKAGE, 'g')
+    while ((match = simplePackageRegex.exec(userInput)) !== null) {
+      if (match[1]) {
+        modules.push(match[1])
+      }
+    }
+  }
+
+  // 去重并返回
+  return [...new Set(modules)]
+}
 
 /**
  * 重置全局变量
@@ -91,26 +125,48 @@ export function registerSyncSingleModule(server: McpServer): void {
         // 清空日志缓冲区，准备收集新的日志
         clearLogBuffer()
 
-        // 优先使用 moduleName 参数，否则从 userInput 中提取
-        let inputToProcess = args.userInput || ''
-        if (args.moduleName && typeof args.moduleName === 'string') {
-          inputToProcess = args.moduleName
-        } else if (
-          Array.isArray(args.moduleName) &&
-          args.moduleName.length > 0
-        ) {
-          inputToProcess = args.moduleName[0] // 暂时只处理第一个模块名
+        // 处理模块名输入，支持多个模块
+        let modulesToProcess: string[] = []
+
+        if (args.moduleName) {
+          if (typeof args.moduleName === 'string') {
+            modulesToProcess = [args.moduleName]
+          } else if (
+            Array.isArray(args.moduleName) &&
+            args.moduleName.length > 0
+          ) {
+            modulesToProcess = args.moduleName
+          }
+        } else if (args.userInput) {
+          // 从 userInput 中提取模块名（可能包含多个）
+          const extractedModules = extractMultipleModuleNames(args.userInput)
+          if (extractedModules.length > 0) {
+            modulesToProcess = extractedModules
+          }
         }
 
-        // 调用 domain 中的 syncSingleModule 方法
-        const result = syncSingleModule(inputToProcess)
+        if (modulesToProcess.length === 0) {
+          const detailedLogs = flushLogBuffer()
+          const errorMessage = `${
+            SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_FAILED
+          }${ERROR_MESSAGES.UNABLE_TO_EXTRACT_MODULES}${
+            detailedLogs
+              ? `${ERROR_MESSAGES.DETAILED_ERROR_SECTION}${detailedLogs}`
+              : ''
+          }${ERROR_MESSAGES.TASK_TERMINATION_NOTICE}`
+
+          return createTextResponse(errorMessage, true)
+        }
+
+        // 调用 domain 中的 syncSingleModule 方法，支持多个模块
+        const syncResult = syncSingleModule(modulesToProcess)
         console.error(
-          result
+          syncResult.success
             ? SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_SUCCESS_LOG
             : SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_FAILED_LOG
         )
         // 如果执行失败，使用 isError: true 标记，并包含详细的日志信息
-        if (!result) {
+        if (!syncResult.success) {
           const detailedLogs = flushLogBuffer()
           const errorMessage = `${
             SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_FAILED
@@ -124,15 +180,12 @@ export function registerSyncSingleModule(server: McpServer): void {
         } else {
           // 成功时清空日志缓冲区
           flushLogBuffer()
-          return createSuccessResponse(
-            SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_SUCCESS
-          )
+          const successMessage = syncResult.partialSuccess
+            ? `${SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_SUCCESS}\n${syncResult.message}`
+            : SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_SUCCESS
+          return createSuccessResponse(successMessage)
         }
       } catch (e) {
-        console.error(
-          '🚀 ~ registerSyncSingleModule ~ args.userInput error:',
-          args.userInput
-        )
         console.error(SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_ERROR, e)
         const detailedLogs = flushLogBuffer()
         const errorMsg =
@@ -150,10 +203,6 @@ export function registerSyncSingleModule(server: McpServer): void {
         // 无论成功还是失败，都重置互斥标志位
         isSyncSingleModule = false
         console.error(SYNC_SINGLE_MODULE_SERVICE_MESSAGES.TASK_END)
-        console.error(
-          '🚀 ~ registerSyncSingleModule ~ args.userInput:',
-          args.userInput
-        )
       }
     }
   )

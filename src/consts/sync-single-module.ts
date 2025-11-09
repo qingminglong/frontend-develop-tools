@@ -31,6 +31,9 @@ export const SYNC_SINGLE_MODULE_SERVICE_MESSAGES = {
 export const SYNC_SINGLE_MODULE_DOMAIN_MESSAGES = {
   // 主要操作流程消息
   SYNC_START: '🔄 开始同步指定模块的修改代码...\n',
+  PROCESSING_MODULES_START: '🔄 开始处理 {count} 个模块...\n',
+  SEARCHING_MODULE: '🔍 查找模块: {moduleName}',
+  MODULE_FOUND: '✅ 找到模块: {moduleName} (路径: {path})',
   EXTRACT_MODULE_SUCCESS: '✅ 提取到模块名: {moduleName}',
   MODULE_NOT_FOUND: '❌ 在配置中未找到模块: {moduleName}',
   SYNC_BUILD_FAILED: '❌ 同步指定模块失败：构建过程出现错误',
@@ -64,7 +67,6 @@ export const SYNC_SINGLE_MODULE_DOMAIN_MESSAGES = {
 
   // pnpm模块查找相关
   PNPM_DIR_NOT_FOUND: '   ⚠️  未找到 .pnpm 目录: {path}',
-  SEARCHING_MODULE: '   🔍 查找模块: {moduleName} (搜索前缀: {prefix})',
   PNPM_DIR_NOT_MATCHED: '   ⚠️  未找到匹配的 pnpm 目录，前缀: {prefix}',
   PNPM_DIR_FOUND: '   ✓ 找到 pnpm 目录: {dir}',
   TARGET_DIR_NOT_EXIST: '   ⚠️  目录不存在: {path}',
@@ -94,7 +96,9 @@ export const SYNC_SINGLE_MODULE_DOMAIN_MESSAGES = {
 
   // 模块缓存相关
   MODULE_CACHED: '📦 模块信息已缓存到全局变量',
+  MODULES_CACHED: '📦 多个模块信息已缓存到全局变量',
   CACHE_PROJECT_PATH: '   项目路径: {path}',
+  CACHE_MODULES_COUNT: '   模块数量: {count}',
   CACHE_MODULE_NAME: '   模块名: {moduleName}',
   CACHE_MODULE_PATH: '   模块路径: {path}',
 

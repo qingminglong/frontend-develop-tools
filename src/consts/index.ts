@@ -147,6 +147,7 @@ export const ERROR_MESSAGES = {
   WORKSPACE_FILE_NOT_FOUND: '在项目路径中找不到 pnpm-workspace.yaml 文件',
   NO_WORKSPACE_PACKAGES: '未找到任何工作区包',
   NO_FILE_CHANGES: '未检测到任何文件变更',
+  UNABLE_TO_EXTRACT_MODULES: '无法从输入中提取有效的模块名',
   DETAILED_ERROR_SECTION: '\n\n详细错误信息：\n',
   TASK_TERMINATION_NOTICE:
     '\n\n上面是已知失败报错信息，不需要进一步分析了，请终止任务。'
