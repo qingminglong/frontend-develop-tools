@@ -1,5 +1,6 @@
 import { execSync } from 'child_process'
 import path from 'path'
+import fs from 'fs'
 import type {
   BuildedModule,
   PackageDependencyInfo
@@ -169,8 +170,22 @@ export function analyzeModulesToBuild(
     })
   })
 
+  // 获取shared目录下所有package.json的name字段
+  const sharedPackageNames = getSharedPackageNames()
+
+  // 过滤出filterChangedModules，排除shared目录下的包
+  const filterChangedModules = changedModules.filter((module) => {
+    // 首先过滤出包含'@ida/vue3-renderer'的模块
+    if (!module.moduleName.includes('@ida/vue3-renderer')) {
+      return false
+    }
+
+    // 排除shared目录下的包（name字段与module.moduleName相同的）
+    return !sharedPackageNames.has(module.moduleName)
+  })
+
   // 对每个变更的模块，查找依赖它的父模块
-  changedModules.forEach((module) => {
+  filterChangedModules.forEach((module) => {
     const dependents = findDependentModules(module.moduleName, dependencyMap)
 
     dependents.forEach((depName) => {
@@ -297,4 +312,59 @@ export function sortModules(
   })
 
   return sorted
+}
+
+/**
+ * 获取shared目录下所有package.json文件的name字段
+ * @returns shared目录下所有package.json的name字段集合
+ */
+function getSharedPackageNames(): Set<string> {
+  const sharedPackageNames = new Set<string>()
+
+  // 遍历所有模块路径
+  for (const modulePath of configuration.modulePaths) {
+    const sharedDir = path.join(modulePath, 'shared')
+
+    // 检查shared目录是否存在
+    if (!fs.existsSync(sharedDir)) {
+      continue
+    }
+
+    // 递归查找shared目录下的所有package.json文件
+    const findPackageJsonFiles = (dir: string) => {
+      try {
+        const items = fs.readdirSync(dir)
+
+        for (const item of items) {
+          const itemPath = path.join(dir, item)
+          const stat = fs.statSync(itemPath)
+
+          if (stat.isDirectory()) {
+            // 递归查找子目录
+            findPackageJsonFiles(itemPath)
+          } else if (item === 'package.json') {
+            // 读取package.json文件并提取name字段
+            try {
+              const packageJson = JSON.parse(
+                fs.readFileSync(itemPath, 'utf8')
+              )
+              if (packageJson.name && typeof packageJson.name === 'string') {
+                sharedPackageNames.add(packageJson.name)
+              }
+            } catch (error) {
+              // 忽略读取或解析失败的文件
+              console.warn(`无法解析package.json: ${itemPath}`, error)
+            }
+          }
+        }
+      } catch (error) {
+        // 忽略无法读取的目录
+        console.warn(`无法读取目录: ${dir}`, error)
+      }
+    }
+
+    findPackageJsonFiles(sharedDir)
+  }
+
+  return sharedPackageNames
 }
