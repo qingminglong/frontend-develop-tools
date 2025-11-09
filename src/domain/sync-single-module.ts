@@ -70,6 +70,121 @@ function extractModuleName(userInput: string): string | null {
 }
 
 /**
+ * 列出所有可用的模块名，多个modulePath左右排列显示
+ */
+export function listAllModules(): void {
+  const { modulePaths } = configuration
+
+  if (!modulePaths || modulePaths.length === 0) {
+    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CONFIG_MODULES_NOT_FOUND)
+    return
+  }
+
+  logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.LIST_MODULES_TITLE)
+
+  // 收集所有模块信息，按modulePath分组
+  const modulesByPath: Record<string, string[]> = {}
+
+  for (const modulePath of modulePaths) {
+    try {
+      const packages = getWorkspacePackages(modulePath)
+      const moduleNames: string[] = []
+
+      for (const pkg of packages) {
+        const packageName = getPackageName(pkg.packageJsonPath)
+        if (packageName) {
+          moduleNames.push(packageName)
+        }
+      }
+
+      if (moduleNames.length > 0) {
+        modulesByPath[modulePath] = moduleNames
+      }
+    } catch (error) {
+      logToChat(
+        `   ❌ 处理模块路径 ${modulePath} 时出错:`,
+        error instanceof Error ? error.message : String(error)
+      )
+    }
+  }
+
+  const paths = Object.keys(modulesByPath)
+  if (paths.length === 0) {
+    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.NO_MODULES_FOUND)
+    return
+  }
+
+  // 如果只有一个modulePath，直接列出
+  if (paths.length === 1) {
+    const path = paths[0]
+    const modules = modulesByPath[path]
+
+    logToChat(
+      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_PATH_HEADER, {
+        path
+      })
+    )
+
+    modules.forEach((moduleName) => {
+      logToChat(`   - ${moduleName}`)
+    })
+    return
+  }
+
+  // 多个modulePath时，左右排列显示
+  const maxModulesPerColumn = Math.max(
+    ...Object.values(modulesByPath).map((m) => m.length)
+  )
+
+  for (let i = 0; i < maxModulesPerColumn; i++) {
+    let line = ''
+
+    paths.forEach((path, pathIndex) => {
+      const modules = modulesByPath[path]
+      const moduleName = modules[i]
+
+      if (pathIndex === 0) {
+        // 第一个路径显示标题
+        if (i === 0) {
+          line += formatMessage(
+            SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_PATH_HEADER,
+            {
+              path
+            }
+          )
+        } else {
+          line += ' '.repeat(path.length + 4) // 调整对齐，考虑 emoji 和格式
+        }
+      } else {
+        // 后续路径显示标题
+        if (i === 0) {
+          line +=
+            '  ' +
+            formatMessage(
+              SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_PATH_HEADER,
+              {
+                path
+              }
+            )
+        } else {
+          line += '  ' + ' '.repeat(path.length + 4) // 调整对齐
+        }
+      }
+
+      if (moduleName) {
+        if (pathIndex === 0) {
+          line += `   - ${moduleName}`
+        } else {
+          line += `   - ${moduleName}`
+        }
+      }
+    })
+
+    logToChat(line)
+  }
+}
+
+/**
  * 处理模块名称提取结果
  * @param moduleName - 提取的模块名称
  * @param userInput - 用户输入字符串
@@ -87,6 +202,9 @@ function extractionModuleLogToChat(
       })
     )
     logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.EXTRACTION_HINT)
+    // 当无法提取模块名时，列出所有可用模块
+    logToChat('')
+    listAllModules()
     return
   }
 
@@ -401,7 +519,6 @@ export function syncSingleModule(userInput: string): boolean {
     }
     // 2. 在配置中查找模块
     const moduleInfo = findModuleInConfiguration(moduleName)
-
     if (!moduleInfo) {
       logToChat(
         formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_NOT_FOUND, {

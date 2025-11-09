@@ -43,6 +43,9 @@ export const SYNC_SINGLE_MODULE_DOMAIN_MESSAGES = {
   USER_INPUT: '   用户输入: {input}',
   EXTRACTION_HINT:
     '   提示: 请确保输入包含模块名，例如 "同步@ida/ui模块下修改内容"',
+  LIST_MODULES_TITLE: '📋 可用的模块列表:',
+  NO_MODULES_FOUND: '❌ 未找到任何模块',
+  MODULE_PATH_HEADER: '📂 {path}:',
 
   // 配置查找相关
   CONFIG_MODULES_NOT_FOUND: '⚠️ 配置中未找到模块路径 (modulePaths)',
