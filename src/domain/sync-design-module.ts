@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import {
   buildDesignModules as buildModules,
+  getDesignBuildModules,
   getCachedStaticBuildModules
 } from './build-design-modules.ts'
 import { syncUmdFiles } from '../utils/sync.ts'
@@ -273,6 +274,8 @@ export function syncDesignModule(): boolean {
   try {
     logToChat(SYNC_DESIGN_MODULE_MESSAGES.SYNC_START)
 
+    // 获取需要构建的模块列表
+    getDesignBuildModules()
     // 调用 buildStaticModules 执行构建
     const isBuildSuccess = buildModules()
 

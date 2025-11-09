@@ -300,10 +300,11 @@ export function getCachedStaticBuildModules(): BuildedModule[] {
 
 /**
  * 执行静态资源模块编译
- * 调用getStaticBuildModules获取模块列表并执行编译
+ * 执行传入的模块列表编译
+ * @param modules - 要编译的模块列表
  * @returns 编译是否成功执行
  */
 export function buildDesignModules(): boolean {
-  const modules = getDesignBuildModules()
+  const modules = getCachedStaticBuildModules()
   return executeBuildModules(modules, true)
 }
