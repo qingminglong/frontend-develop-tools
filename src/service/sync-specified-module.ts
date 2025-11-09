@@ -1,12 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import { syncSpecifiedModule } from '../domain/sync-specified-module.ts'
+import {
+  syncSpecifiedModule,
+  listAllModules
+} from '../domain/sync-specified-module.ts'
 
-// 导入 listAllModules 函数（由于它是内部函数，我们需要一个包装函数）
-function listAllModules() {
-  // 这里需要调用 domain 中的 listAllModules 函数
-  // 但是它是内部函数，我们需要导出一个包装函数
-}
 import {
   clearLogBuffer,
   flushLogBuffer,
@@ -94,12 +92,12 @@ export function registerSyncSpecifiedModule(server: McpServer): void {
     (args: any) => {
       try {
         // 检查 moduleName 参数是否为空或空数组
-        const isModuleNameEmpty =
+        const isNoModuleName =
           !args.moduleName ||
           (Array.isArray(args.moduleName) && args.moduleName.length === 0) ||
           (typeof args.moduleName === 'string' && args.moduleName.trim() === '')
 
-        if (isModuleNameEmpty) {
+        if (isNoModuleName) {
           // 如果 moduleName 为空，列出所有可用模块
           console.error('ModuleName is empty, listing all modules')
           clearLogBuffer()

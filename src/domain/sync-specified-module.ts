@@ -92,9 +92,8 @@ export function listAllModules(): void {
     return
   }
 
-  // 如果只有一个modulePath，直接列出
-  if (paths.length === 1) {
-    const path = paths[0]
+  // 为每个modulePath分别显示模块列表
+  paths.forEach((path) => {
     const modules = modulesByPath[path]
 
     logToChat(
@@ -106,60 +105,12 @@ export function listAllModules(): void {
     modules.forEach((moduleName) => {
       logToChat(`   - ${moduleName}`)
     })
-    return
-  }
 
-  // 多个modulePath时，左右排列显示
-  const maxModulesPerColumn = Math.max(
-    ...Object.values(modulesByPath).map((m) => m.length)
-  )
-
-  for (let i = 0; i < maxModulesPerColumn; i++) {
-    let line = ''
-
-    paths.forEach((path, pathIndex) => {
-      const modules = modulesByPath[path]
-      const moduleName = modules[i]
-
-      if (pathIndex === 0) {
-        // 第一个路径显示标题
-        if (i === 0) {
-          line += formatMessage(
-            SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULE_PATH_HEADER,
-            {
-              path
-            }
-          )
-        } else {
-          line += ' '.repeat(path.length + 4) // 调整对齐，考虑 emoji 和格式
-        }
-      } else {
-        // 后续路径显示标题
-        if (i === 0) {
-          line +=
-            '  ' +
-            formatMessage(
-              SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULE_PATH_HEADER,
-              {
-                path
-              }
-            )
-        } else {
-          line += '  ' + ' '.repeat(path.length + 4) // 调整对齐
-        }
-      }
-
-      if (moduleName) {
-        if (pathIndex === 0) {
-          line += `   - ${moduleName}`
-        } else {
-          line += `   - ${moduleName}`
-        }
-      }
-    })
-
-    logToChat(line)
-  }
+    // 在不同路径之间添加空行
+    if (paths.length > 1) {
+      logToChat('')
+    }
+  })
 }
 
 /**
@@ -206,9 +157,12 @@ function findModuleInConfiguration(moduleName: string): ModuleInfo | null {
 
       if (packages.length === 0) {
         logToChat(
-          formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.SKIP_MODULE_PATH, {
-            path: modulePath
-          })
+          formatMessage(
+            SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.SKIP_MODULE_PATH,
+            {
+              path: modulePath
+            }
+          )
         )
         continue
       }
@@ -376,7 +330,9 @@ function buildSingleModule(): {
         )
 
         if (!fs.existsSync(packageJsonPath)) {
-          logToChat(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.PACKAGE_JSON_NOT_FOUND)
+          logToChat(
+            SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.PACKAGE_JSON_NOT_FOUND
+          )
           continue
         }
 
@@ -384,7 +340,9 @@ function buildSingleModule(): {
         const pkg = JSON.parse(content)
 
         if (!pkg.scripts || !pkg.scripts.build) {
-          logToChat(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_SCRIPT_NOT_FOUND)
+          logToChat(
+            SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_SCRIPT_NOT_FOUND
+          )
           continue
         }
 
@@ -444,9 +402,12 @@ function buildSingleModule(): {
     // 根据编译结果返回状态
     if (failCount > 0) {
       logToChat(
-        formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_PARTIAL_FAIL, {
-          count: failCount
-        })
+        formatMessage(
+          SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_PARTIAL_FAIL,
+          {
+            count: failCount
+          }
+        )
       )
       const message = `编译完成，但有 ${failCount} 个模块编译失败，成功 ${successCount} 个`
       return { success: false, partialSuccess: successCount > 0, message }
@@ -535,9 +496,12 @@ export function syncSpecifiedModule(modules: string[]): SyncResult {
       } else {
         notFoundModules.push(moduleName)
         logToChat(
-          formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULE_NOT_FOUND, {
-            moduleName
-          })
+          formatMessage(
+            SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULE_NOT_FOUND,
+            {
+              moduleName
+            }
+          )
         )
       }
     }
