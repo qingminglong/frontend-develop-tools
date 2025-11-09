@@ -9,6 +9,7 @@ import type { ModuleInfo } from '../types/detect-changed-module.ts'
 import { BUILD_REASON, SPECIAL_CHARS, LOG_MESSAGES } from '../consts/index.ts'
 import { logToChat, parseWorkspacePatterns } from './index.ts'
 import { configuration } from '../domain/get-configuration.ts'
+import { getEnableSharedDepend } from '../service/build-modules.ts'
 
 /**
  * 通用的模块编译函数
@@ -170,19 +171,24 @@ export function analyzeModulesToBuild(
     })
   })
 
-  // 获取shared目录下所有package.json的name字段
-  const sharedPackageNames = getSharedPackageNames()
+  // 获取是否启用共享依赖
+  const enableSharedDepend = getEnableSharedDepend()
 
-  // 过滤出filterChangedModules，排除shared目录下的包
+  // 获取shared目录下所有package.json的name字段
+  const sharedPackageNames = enableSharedDepend ? getSharedPackageNames() : new Set<string>()
+
+  // 过滤出filterChangedModules
   const filterChangedModules = changedModules.filter((module) => {
-    // 首先过滤出包含'@ida/vue3-renderer'的模块
-    if (!module.moduleName.includes('@ida/vue3-renderer')) {
+    // 如果启用了共享依赖，则排除shared目录下的包
+    if (enableSharedDepend && sharedPackageNames.has(module.moduleName)) {
       return false
     }
-
-    // 排除shared目录下的包（name字段与module.moduleName相同的）
-    return !sharedPackageNames.has(module.moduleName)
+    return true
   })
+  console.log(
+    '🚀 ~ analyzeModulesToBuild ~ filterChangedModules:',
+    filterChangedModules
+  )
 
   // 对每个变更的模块，查找依赖它的父模块
   filterChangedModules.forEach((module) => {
@@ -345,9 +351,7 @@ function getSharedPackageNames(): Set<string> {
           } else if (item === 'package.json') {
             // 读取package.json文件并提取name字段
             try {
-              const packageJson = JSON.parse(
-                fs.readFileSync(itemPath, 'utf8')
-              )
+              const packageJson = JSON.parse(fs.readFileSync(itemPath, 'utf8'))
               if (packageJson.name && typeof packageJson.name === 'string') {
                 sharedPackageNames.add(packageJson.name)
               }
