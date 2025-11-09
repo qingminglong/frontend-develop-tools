@@ -17,13 +17,30 @@ import {
  * 全局互斥标志位：标识是否有编译操作正在执行
  */
 let isBuildingInProgress = false
-
+let enableSharedDepend = false
 /**
  * 重置全局变量
  * 用于清理进程退出或MCP被禁用时的互斥状态
  */
 export function resetBuildModulesServiceGlobals(): void {
   isBuildingInProgress = false
+  enableSharedDepend = false
+}
+
+/**
+ * 设置是否启用共享依赖
+ * @param enabled - 是否启用共享依赖
+ */
+export function setEnableSharedDepend(enabled: boolean): void {
+  enableSharedDepend = enabled
+}
+
+/**
+ * 获取是否启用共享依赖
+ * @returns 是否启用共享依赖
+ */
+export function getEnableSharedDepend(): boolean {
+  return enableSharedDepend
 }
 
 /**
