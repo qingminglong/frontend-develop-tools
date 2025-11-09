@@ -1,11 +1,6 @@
-import {
-  buildModules,
-  getCachedBuildModules,
-  getAllBuildedModules
-} from './build-modules.ts'
+import { buildModules, getCachedBuildModules } from './build-modules.ts'
 import { syncCompiledFiles } from '../utils/sync.ts'
 import { logToChat } from '../utils/index.ts'
-import { detectChangedModulesForAllPaths } from './detect-changed-module.ts'
 import { SYNC_MODIFIED_MODULE_MESSAGES } from '../consts/sync-modified-module.ts'
 
 /**
@@ -24,12 +19,6 @@ import { SYNC_MODIFIED_MODULE_MESSAGES } from '../consts/sync-modified-module.ts
 export function syncModifiedModule(): boolean {
   try {
     logToChat(SYNC_MODIFIED_MODULE_MESSAGES.SYNC_MODIFY_START)
-
-    // 检测变更的模块
-    detectChangedModulesForAllPaths()
-
-    // 获取所有已构建的模块
-    getAllBuildedModules()
 
     // 调用 buildModules 执行构建
     const isSuccess = buildModules()
