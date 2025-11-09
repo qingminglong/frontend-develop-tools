@@ -1,4 +1,4 @@
-import { modulesInfosDetail } from './detect-changed-module.ts'
+import { getModulesInfosDetail } from './detect-changed-module.ts'
 import path from 'path'
 import fs from 'fs'
 import { glob } from 'glob'
@@ -143,7 +143,7 @@ function getBuildedModules(): Record<string, BuildedModule[]> {
   logToChat(LOG_MESSAGES.ANALYZE_START)
 
   // 任务一和任务二：遍历modulesInfosDetail对象
-  Object.entries(modulesInfosDetail).forEach(
+  Object.entries(getModulesInfosDetail()).forEach(
     ([projectPath, modulesInfos]: [string, ModuleInfo[]]) => {
       if (modulesInfos.length === 0) {
         logToChat(LOG_MESSAGES.NO_CHANGES_SKIP.replace('{path}', projectPath))
