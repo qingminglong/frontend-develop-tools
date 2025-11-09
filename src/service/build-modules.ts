@@ -12,6 +12,7 @@ import {
   BUILD_MODULES_SERVICE_MESSAGES,
   ERROR_MESSAGES
 } from '../consts/index.ts'
+import { z } from 'zod'
 
 /**
  * 全局互斥标志位：标识是否有编译操作正在执行
@@ -44,6 +45,21 @@ export function getEnableSharedDepend(): boolean {
 }
 
 /**
+ * 检查用户输入是否以auto结尾
+ * @param userInput - 用户输入
+ * @returns 是否以auto结尾
+ */
+function isAutoCommand(userInput: string): boolean {
+  if (!userInput || typeof userInput !== 'string') {
+    return false
+  }
+  // 去除末尾的标点符号和空格，然后检查是否以auto结尾
+  const trimmed = userInput.trim().replace(/[.,!?;:]$/, '')
+  const words = trimmed.split(/\s+/)
+  return words.length > 0 && words[words.length - 1].toLowerCase() === 'auto'
+}
+
+/**
  * 注册构建模块工具
  * 直接执行 buildModules 函数进行构建
  * 使用全局互斥标志位防止并发执行
@@ -54,9 +70,14 @@ export function registerBuildModules(server: McpServer): void {
     {
       title: 'build-modules',
       description: '执行模块构建任务',
-      inputSchema: {}
+      inputSchema: {
+        userInput: z
+          .string()
+          .optional()
+          .describe('用户输入，如果以auto结尾则启用共享依赖排除')
+      }
     },
-    () => {
+    (args: any) => {
       try {
         // 检查是否有编译操作正在执行
         const inProgressCheck = checkOperationInProgress(
@@ -67,6 +88,13 @@ export function registerBuildModules(server: McpServer): void {
         if (inProgressCheck) {
           return inProgressCheck
         }
+
+        // 处理auto匹配逻辑
+        const userInput = args.userInput || ''
+        const isAutoCmd = isAutoCommand(userInput)
+
+        // 根据auto匹配结果设置enableSharedDepend
+        setEnableSharedDepend(isAutoCmd)
 
         // 设置互斥标志位
         isBuildingInProgress = true
