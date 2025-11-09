@@ -124,24 +124,9 @@ export function registerSyncSpecifiedModule(server: McpServer): void {
         clearLogBuffer()
 
         // 处理模块名输入，支持多个模块
-        let modulesToProcess: string[] = []
-
-        if (args.moduleName) {
-          if (typeof args.moduleName === 'string') {
-            modulesToProcess = [args.moduleName]
-          } else if (
-            Array.isArray(args.moduleName) &&
-            args.moduleName.length > 0
-          ) {
-            modulesToProcess = args.moduleName
-          }
-        } else if (args.userInput) {
-          // 从 userInput 中提取模块名（可能包含多个）
-          const extractedModules = extractMultipleModuleNames(args.userInput)
-          if (extractedModules.length > 0) {
-            modulesToProcess = extractedModules
-          }
-        }
+        // 优先使用 moduleName 参数，如果为空则从 userInput 中提取
+        const inputSource = args.moduleName || args.userInput || ''
+        const modulesToProcess = extractMultipleModuleNames(inputSource)
 
         if (modulesToProcess.length === 0) {
           const detailedLogs = flushLogBuffer()
