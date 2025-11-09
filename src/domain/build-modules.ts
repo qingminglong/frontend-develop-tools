@@ -18,7 +18,7 @@ import {
   LOG_MESSAGES
 } from '../consts/index.ts'
 import { logToChat } from '../utils/index.ts'
-import { executeBuildModules } from '../utils/build.ts'
+import { executeBuildModules, analyzeModulesToBuild } from '../utils/build.ts'
 /**
  * 全局变量：缓存所有需要编译的模块列表
  */
@@ -127,95 +127,6 @@ function getAllPackageDependencies(
   })
 
   return dependencyMap
-}
-
-/**
- * 查找依赖指定模块的所有父模块（递归）
- * @param moduleName - 模块名
- * @param dependencyMap - 所有包的依赖信息
- * @param visited - 已访问的模块集合，防止循环依赖
- * @returns 依赖该模块的所有父模块名称列表
- */
-function findDependentModules(
-  moduleName: string,
-  dependencyMap: Map<string, PackageDependencyInfo>,
-  visited: Set<string> = new Set()
-): string[] {
-  if (visited.has(moduleName)) {
-    return [] // 防止循环依赖
-  }
-  visited.add(moduleName)
-
-  const dependents: string[] = []
-
-  // 遍历所有包，找出依赖当前模块的包
-  dependencyMap.forEach((pkgInfo, pkgName) => {
-    if (pkgInfo.dependencies.has(moduleName)) {
-      dependents.push(pkgName)
-      // 递归查找依赖这个父模块的其他模块
-      const transitiveDependents = findDependentModules(
-        pkgName,
-        dependencyMap,
-        visited
-      )
-      dependents.push(...transitiveDependents)
-    }
-  })
-
-  return [...new Set(dependents)] // 去重
-}
-
-/**
- * 分析需要编译的所有模块（包括变更的模块和依赖它们的父模块）
- * @param changedModules - 变更的模块列表
- * @param dependencyMap - 所有包的依赖信息
- * @returns 需要编译的完整模块列表
- */
-function analyzeModulesToBuild(
-  changedModules: ModuleInfo[],
-  dependencyMap: Map<string, PackageDependencyInfo>
-): BuildedModule[] {
-  const buildModulesMap = new Map<string, BuildedModule>()
-
-  // 首先添加所有变更的模块
-  changedModules.forEach((module) => {
-    buildModulesMap.set(module.moduleName, {
-      moduleName: module.moduleName,
-      modulePath: module.modulePath,
-      reason: BUILD_REASON.CHANGED
-    })
-  })
-
-  // 对每个变更的模块，查找依赖它的父模块
-  changedModules.forEach((module) => {
-    const dependents = findDependentModules(module.moduleName, dependencyMap)
-
-    dependents.forEach((depName) => {
-      const depInfo = dependencyMap.get(depName)
-      if (depInfo && !buildModulesMap.has(depName)) {
-        buildModulesMap.set(depName, {
-          moduleName: depName,
-          modulePath: depInfo.path,
-          reason: BUILD_REASON.DEPENDENT,
-          dependedBy: [module.moduleName]
-        })
-      } else if (
-        depInfo &&
-        buildModulesMap.get(depName)?.reason === BUILD_REASON.DEPENDENT
-      ) {
-        // 如果已存在且是dependent，添加到dependedBy列表
-        const existing = buildModulesMap.get(depName)!
-        if (!existing.dependedBy) {
-          existing.dependedBy = []
-        }
-        if (!existing.dependedBy.includes(module.moduleName)) {
-          existing.dependedBy.push(module.moduleName)
-        }
-      }
-    })
-  })
-
-  return Array.from(buildModulesMap.values())
 }
 
 /**

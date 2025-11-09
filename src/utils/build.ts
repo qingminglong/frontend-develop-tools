@@ -1,6 +1,10 @@
 import { execSync } from 'child_process'
 import path from 'path'
-import type { BuildedModule } from '../types/build-modules.ts'
+import type {
+  BuildedModule,
+  PackageDependencyInfo
+} from '../types/build-modules.ts'
+import type { ModuleInfo } from '../types/detect-changed-module.ts'
 import { BUILD_REASON, SPECIAL_CHARS, LOG_MESSAGES } from '../consts/index.ts'
 import { logToChat, parseWorkspacePatterns } from './index.ts'
 import { configuration } from '../domain/get-configuration.ts'
@@ -142,4 +146,107 @@ export function isModuleExcluded(
       relativePath.startsWith(excludePattern + '/')
     )
   })
+}
+
+/**
+ * 分析需要编译的所有模块（包括变更的模块和依赖它们的父模块）
+ * @param changedModules - 变更的模块列表
+ * @param dependencyMap - 所有包的依赖信息
+ * @returns 需要编译的完整模块列表
+ */
+export function analyzeModulesToBuild(
+  changedModules: ModuleInfo[],
+  dependencyMap: Map<string, PackageDependencyInfo>
+): BuildedModule[] {
+  const buildModulesMap = new Map<string, BuildedModule>()
+
+  // 首先添加所有变更的模块
+  changedModules.forEach((module) => {
+    buildModulesMap.set(module.moduleName, {
+      moduleName: module.moduleName,
+      modulePath: module.modulePath,
+      reason: BUILD_REASON.CHANGED
+    })
+  })
+
+  // 对每个变更的模块，查找依赖它的父模块
+  changedModules.forEach((module) => {
+    const dependents = findDependentModules(module.moduleName, dependencyMap)
+
+    dependents.forEach((depName) => {
+      const depInfo = dependencyMap.get(depName)
+      if (depInfo && !buildModulesMap.has(depName)) {
+        buildModulesMap.set(depName, {
+          moduleName: depName,
+          modulePath: depInfo.path,
+          reason: BUILD_REASON.DEPENDENT,
+          dependedBy: [module.moduleName]
+        })
+      } else if (
+        depInfo &&
+        buildModulesMap.get(depName)?.reason === BUILD_REASON.DEPENDENT
+      ) {
+        // 如果已存在且是dependent，添加到dependedBy列表
+        const module = buildModulesMap.get(depName)!
+        if (!module.dependedBy) {
+          module.dependedBy = []
+        }
+        if (!module.dependedBy.includes(module.moduleName)) {
+          module.dependedBy.push(module.moduleName)
+        }
+      }
+    })
+  })
+
+  // 获取被排除的包模式列表
+  const excludedModules = getExcludedModules()
+  // 过滤掉被排除的模块
+  const filteredModules = Array.from(buildModulesMap.values()).filter(
+    (module) => {
+      const isExcluded = isModuleExcluded(module.modulePath, excludedModules)
+      console.error(module.modulePath)
+      if (isExcluded) {
+        logToChat(`跳过被排除的模块: ${module.moduleName}`)
+      }
+      return !isExcluded
+    }
+  )
+
+  return filteredModules
+}
+
+/**
+ * 查找依赖指定模块的所有父模块（递归）
+ * @param moduleName - 模块名
+ * @param dependencyMap - 所有包的依赖信息
+ * @param visited - 已访问的模块集合，防止循环依赖
+ * @returns 依赖该模块的所有父模块名称列表
+ */
+export function findDependentModules(
+  moduleName: string,
+  dependencyMap: Map<string, PackageDependencyInfo>,
+  visited: Set<string> = new Set()
+): string[] {
+  if (visited.has(moduleName)) {
+    return [] // 防止循环依赖
+  }
+  visited.add(moduleName)
+
+  const dependents: string[] = []
+
+  // 遍历所有包，找出依赖当前模块的包
+  dependencyMap.forEach((pkgInfo, pkgName) => {
+    if (pkgInfo.dependencies.has(moduleName)) {
+      dependents.push(pkgName)
+      // 递归查找依赖这个父模块的其他模块
+      const transitiveDependents = findDependentModules(
+        pkgName,
+        dependencyMap,
+        visited
+      )
+      dependents.push(...transitiveDependents)
+    }
+  })
+
+  return [...new Set(dependents)] // 去重
 }
