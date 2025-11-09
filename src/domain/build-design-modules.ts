@@ -299,6 +299,14 @@ export function getCachedStaticBuildModules(): BuildedModule[] {
 }
 
 /**
+ * 设置缓存的静态资源构建模块列表
+ * @param modules - 要设置的模块列表
+ */
+export function setCachedStaticBuildModules(modules: BuildedModule[]): void {
+  cachedDesignBuildModules = modules
+}
+
+/**
  * 执行静态资源模块编译
  * 执行传入的模块列表编译
  * @param modules - 要编译的模块列表
