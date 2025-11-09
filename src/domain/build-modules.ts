@@ -21,7 +21,7 @@ import { logToChat } from '../utils/index.ts'
 import {
   executeBuildModules,
   analyzeModulesToBuild,
-  topologicalSort
+  sortModules
 } from '../utils/build.ts'
 /**
  * 全局变量：缓存所有需要编译的模块列表
@@ -183,7 +183,7 @@ function getBuildedModules(): Record<string, BuildedModule[]> {
           )
 
           // 进行拓扑排序，确保编译顺序正确
-          const sortedModules = topologicalSort(modulesToBuild, dependencyMap)
+          const sortedModules = sortModules(modulesToBuild, dependencyMap)
 
           result[projectPath] = sortedModules
 

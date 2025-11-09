@@ -18,7 +18,7 @@ import { logToChat } from '../utils/index.ts'
 import {
   executeBuildModules,
   analyzeModulesToBuild,
-  topologicalSort
+  sortModules
 } from '../utils/build.ts'
 import { getWorkspacePackages } from './detect-changed-module.ts'
 import { glob } from 'glob'
@@ -147,7 +147,7 @@ function analyzeAndFilterModules(
     )
 
     // 进行拓扑排序，确保编译顺序正确
-    const sortedModules = topologicalSort(modulesToBuild, mergedDependencyMap)
+    const sortedModules = sortModules(modulesToBuild, mergedDependencyMap)
 
     // 过滤出实际存在的静态模块（确保只包含有build:umd脚本的模块）
     const finalModules = sortedModules.filter((module) => {

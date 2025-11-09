@@ -257,7 +257,7 @@ export function findDependentModules(
  * @param dependencyMap - 所有包的依赖信息
  * @returns 排序后的模块列表（被依赖的模块在前）
  */
-export function topologicalSort(
+export function sortModules(
   modules: BuildedModule[],
   dependencyMap: Map<string, PackageDependencyInfo>
 ): BuildedModule[] {
