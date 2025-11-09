@@ -7,7 +7,7 @@ import {
   clearAllModulesInfos
 } from '../domain/detect-changed-module.ts'
 import { getAllBuildedModules } from '../domain/build-modules.ts'
-import { listModifedModules } from '../domain/sync-specified-module.ts'
+import { listModifiedModules as listModifiedModules } from '../domain/sync-specified-module.ts'
 import {
   clearLogBuffer,
   flushLogBuffer,
@@ -104,7 +104,7 @@ export function registerSyncModifyCode(server: McpServer): void {
           console.error(
             'User input ends with "list", listing all changed modules'
           )
-          listModifedModules()
+          listModifiedModules()
           const detailedLogs = flushLogBuffer()
           return createSuccessResponse(
             `变更模块列表已显示${detailedLogs ? `\n${detailedLogs}` : ''}`

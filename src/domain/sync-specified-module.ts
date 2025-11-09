@@ -122,7 +122,7 @@ export function listAllModules(): void {
  * 列出变更的模块
  * 从 getModulesInfosDetail() 获取并显示所有变更的模块
  */
-export function listModifedModules(): void {
+export function listModifiedModules(): void {
   const modulesDetail = getModulesInfosDetail()
 
   const allPaths = Object.keys(modulesDetail)
