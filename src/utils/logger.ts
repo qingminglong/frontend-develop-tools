@@ -35,7 +35,7 @@ export function logToStderr(message: string, ...args: any[]): void {
           )
           .join(' ')}`
       : message
-  process.stderr.write('[stderr] ' + fullMessage + '\n')
+  process.stderr.write(fullMessage + '\n')
 }
 
 /**

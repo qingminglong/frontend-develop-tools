@@ -1,5 +1,5 @@
 import { configuration } from './get-configuration.ts'
-import { logToChat, formatMessage, logToStderr } from '../utils/index.ts'
+import { logToChat, formatMessage } from '../utils/index.ts'
 import { syncCompiledFiles } from '../utils/sync.ts'
 import {
   FILE_NAMES,
@@ -95,22 +95,22 @@ export function listAllModules(): void {
   paths.forEach((path, index) => {
     const modules = modulesByPath[path]
 
-    logToStderr(
+    logToChat(
       formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULE_PATH_HEADER, {
         path
       })
     )
 
     // 在第一个模块名前添加换行
-    logToStderr('')
+    logToChat('')
 
     modules.forEach((moduleName) => {
-      logToStderr(moduleName)
+      logToChat(moduleName)
     })
 
     // 在不同路径之间添加空行（除了最后一个路径）
     if (index < paths.length - 1) {
-      logToStderr('')
+      logToChat('')
     }
   })
 }
