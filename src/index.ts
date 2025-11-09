@@ -6,8 +6,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
 // 导入所有重置全局变量的函数
 import { resetBuildModulesGlobals } from './domain/build-modules.ts'
-import { resetSyncSingleModuleGlobals } from './domain/sync-single-module.ts'
-import { resetSyncSingleModuleServiceGlobals } from './service/sync-single-module.ts'
+import { resetSyncSpecifiedModuleGlobals } from './domain/sync-specified-module.ts'
+import { resetSyncSpecifiedModuleServiceGlobals } from './service/sync-specified-module.ts'
 import { resetSyncDesignModuleServiceGlobals } from './service/sync-design-module.ts'
 import { resetBuildModulesServiceGlobals } from './service/build-modules.ts'
 import { resetSyncModifyCodeServiceGlobals } from './service/sync-modified-module.ts'
@@ -19,7 +19,7 @@ import {
   registerBuildModules,
   registerSyncModifyCode,
   registerSyncDesignModule,
-  registerSyncSingleModule
+  registerSyncSpecifiedModule
 } from './service/index.ts'
 
 /**
@@ -31,10 +31,10 @@ function resetAllGlobals(): void {
 
   // 重置 domain 层全局变量
   resetBuildModulesGlobals()
-  resetSyncSingleModuleGlobals()
+  resetSyncSpecifiedModuleGlobals()
 
   // 重置 service 层全局变量
-  resetSyncSingleModuleServiceGlobals()
+  resetSyncSpecifiedModuleServiceGlobals()
   resetSyncDesignModuleServiceGlobals()
   resetBuildModulesServiceGlobals()
   resetSyncModifyCodeServiceGlobals()
@@ -67,7 +67,7 @@ registerCheckConfiguration(server)
 registerBuildModules(server)
 registerSyncModifyCode(server)
 registerSyncDesignModule(server)
-registerSyncSingleModule(server)
+registerSyncSpecifiedModule(server)
 
 /**
  * 启动服务器并建立与传输层的连接。

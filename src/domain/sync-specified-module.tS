@@ -8,7 +8,7 @@ import {
   BUILD_COMMANDS,
   TIMEOUTS
 } from '../consts/index.ts'
-import { SYNC_SINGLE_MODULE_DOMAIN_MESSAGES } from '../consts/sync-single-module.ts'
+import { SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES } from '../consts/sync-specified-module.ts'
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
@@ -39,7 +39,7 @@ let cachedSingleBuildModules: BuildedModule[] = []
  * 重置全局变量
  * 用于清理进程退出或MCP被禁用时的缓存状态
  */
-export function resetSyncSingleModuleGlobals(): void {
+export function resetSyncSpecifiedModuleGlobals(): void {
   // 清空对象的所有属性
   Object.keys(singleModulesInfosDetail).forEach((key) => {
     delete singleModulesInfosDetail[key]
@@ -54,11 +54,11 @@ export function listAllModules(): void {
   const { modulePaths } = configuration
 
   if (!modulePaths || modulePaths.length === 0) {
-    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CONFIG_MODULES_NOT_FOUND)
+    logToChat(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.CONFIG_MODULES_NOT_FOUND)
     return
   }
 
-  logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.LIST_MODULES_TITLE)
+  logToChat(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.LIST_MODULES_TITLE)
 
   // 收集所有模块信息，按modulePath分组
   const modulesByPath: Record<string, string[]> = {}
@@ -88,7 +88,7 @@ export function listAllModules(): void {
 
   const paths = Object.keys(modulesByPath)
   if (paths.length === 0) {
-    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.NO_MODULES_FOUND)
+    logToChat(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.NO_MODULES_FOUND)
     return
   }
 
@@ -98,7 +98,7 @@ export function listAllModules(): void {
     const modules = modulesByPath[path]
 
     logToChat(
-      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_PATH_HEADER, {
+      formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULE_PATH_HEADER, {
         path
       })
     )
@@ -125,7 +125,7 @@ export function listAllModules(): void {
         // 第一个路径显示标题
         if (i === 0) {
           line += formatMessage(
-            SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_PATH_HEADER,
+            SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULE_PATH_HEADER,
             {
               path
             }
@@ -139,7 +139,7 @@ export function listAllModules(): void {
           line +=
             '  ' +
             formatMessage(
-              SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_PATH_HEADER,
+              SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULE_PATH_HEADER,
               {
                 path
               }
@@ -175,7 +175,7 @@ function getPackageName(packageJsonPath: string): string | null {
   } catch (error) {
     logToChat(
       formatMessage(
-        SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.PACKAGE_JSON_READ_FAILED,
+        SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.PACKAGE_JSON_READ_FAILED,
         {
           path: packageJsonPath
         }
@@ -194,7 +194,7 @@ function findModuleInConfiguration(moduleName: string): ModuleInfo | null {
   const { modulePaths } = configuration
 
   if (!modulePaths || modulePaths.length === 0) {
-    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CONFIG_MODULES_NOT_FOUND)
+    logToChat(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.CONFIG_MODULES_NOT_FOUND)
     return null
   }
 
@@ -206,15 +206,18 @@ function findModuleInConfiguration(moduleName: string): ModuleInfo | null {
 
       if (packages.length === 0) {
         logToChat(
-          formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SKIP_MODULE_PATH, {
-            path: modulePath
-          })
+          formatMessage(
+            SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.SKIP_MODULE_PATH,
+            {
+              path: modulePath
+            }
+          )
         )
         continue
       }
 
       logToChat(
-        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.PACKAGES_FOUND, {
+        formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.PACKAGES_FOUND, {
           path: modulePath,
           count: packages.length
         })
@@ -232,7 +235,7 @@ function findModuleInConfiguration(moduleName: string): ModuleInfo | null {
         if (packageName.toLowerCase() === moduleName.toLowerCase()) {
           logToChat(
             formatMessage(
-              SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_MATCH_FOUND,
+              SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULE_MATCH_FOUND,
               {
                 packageName,
                 path: pkg.path
@@ -282,31 +285,31 @@ function cacheMultipleModuleInfo(moduleInfos: ModuleInfo[]): void {
     singleModulesInfosDetail[projectPath] = modules
 
     logToChat(
-      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CACHE_PROJECT_PATH, {
+      formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.CACHE_PROJECT_PATH, {
         path: projectPath
       })
     )
     logToChat(
-      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CACHE_MODULES_COUNT, {
+      formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.CACHE_MODULES_COUNT, {
         count: modules.length
       })
     )
 
     for (const module of modules) {
       logToChat(
-        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CACHE_MODULE_NAME, {
+        formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.CACHE_MODULE_NAME, {
           moduleName: module.moduleName
         })
       )
       logToChat(
-        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.CACHE_MODULE_PATH, {
+        formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.CACHE_MODULE_PATH, {
           path: module.modulePath
         })
       )
     }
   }
 
-  logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULES_CACHED)
+  logToChat(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULES_CACHED)
 }
 
 /**
@@ -335,7 +338,7 @@ function buildSingleModule(): {
     const allModules = Object.values(singleModulesInfosDetail).flat()
 
     if (allModules.length === 0) {
-      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.NO_MODULES_TO_BUILD)
+      logToChat(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.NO_MODULES_TO_BUILD)
       return {
         success: false,
         partialSuccess: false,
@@ -344,7 +347,7 @@ function buildSingleModule(): {
     }
 
     logToChat(
-      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_MODULES_START, {
+      formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_MODULES_START, {
         count: allModules.length
       })
     )
@@ -357,13 +360,13 @@ function buildSingleModule(): {
 
     for (const module of allModules) {
       logToChat(
-        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILDING_MODULE, {
+        formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILDING_MODULE, {
           total: allModules.length,
           moduleName: module.moduleName
         })
       )
       logToChat(
-        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_PATH, {
+        formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULE_PATH, {
           path: module.modulePath
         })
       )
@@ -376,7 +379,9 @@ function buildSingleModule(): {
         )
 
         if (!fs.existsSync(packageJsonPath)) {
-          logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.PACKAGE_JSON_NOT_FOUND)
+          logToChat(
+            SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.PACKAGE_JSON_NOT_FOUND
+          )
           continue
         }
 
@@ -384,12 +389,14 @@ function buildSingleModule(): {
         const pkg = JSON.parse(content)
 
         if (!pkg.scripts || !pkg.scripts.build) {
-          logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_SCRIPT_NOT_FOUND)
+          logToChat(
+            SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_SCRIPT_NOT_FOUND
+          )
           continue
         }
 
         // 执行 pnpm run build 命令
-        logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_COMMAND)
+        logToChat(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_COMMAND)
 
         const startTime = Date.now()
 
@@ -402,7 +409,7 @@ function buildSingleModule(): {
 
         const duration = ((Date.now() - startTime) / 1000).toFixed(2)
         logToChat(
-          formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_SUCCESS, {
+          formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_SUCCESS, {
             duration
           })
         )
@@ -416,7 +423,7 @@ function buildSingleModule(): {
         })
       } catch (error) {
         logToChat(
-          SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_FAILED,
+          SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_FAILED,
           error instanceof Error ? error.message : String(error)
         )
         logToChat('\n')
@@ -424,19 +431,19 @@ function buildSingleModule(): {
       }
     }
 
-    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_STATS)
+    logToChat(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_STATS)
     logToChat(
-      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_SUCCESS_COUNT, {
+      formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_SUCCESS_COUNT, {
         count: successCount
       })
     )
     logToChat(
-      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_FAIL_COUNT, {
+      formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_FAIL_COUNT, {
         count: failCount
       })
     )
     logToChat(
-      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_TOTAL_COUNT, {
+      formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_TOTAL_COUNT, {
         count: allModules.length
       })
     )
@@ -444,19 +451,22 @@ function buildSingleModule(): {
     // 根据编译结果返回状态
     if (failCount > 0) {
       logToChat(
-        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_PARTIAL_FAIL, {
-          count: failCount
-        })
+        formatMessage(
+          SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_PARTIAL_FAIL,
+          {
+            count: failCount
+          }
+        )
       )
       const message = `编译完成，但有 ${failCount} 个模块编译失败，成功 ${successCount} 个`
       return { success: false, partialSuccess: successCount > 0, message }
     }
 
-    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_ALL_SUCCESS)
+    logToChat(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_ALL_SUCCESS)
     return { success: true, partialSuccess: false, message: '' }
   } catch (error) {
     logToChat(
-      SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.BUILD_EXCEPTION,
+      SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.BUILD_EXCEPTION,
       error instanceof Error ? error.message : String(error)
     )
     return {
@@ -491,9 +501,9 @@ export function clearSingleModulesInfosDetail(): void {
  * @param modules - 模块名数组
  * @returns 同步结果对象
  */
-export function syncSingleModule(modules: string[]): SyncResult {
+export function syncSpecifiedModule(modules: string[]): SyncResult {
   try {
-    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_START)
+    logToChat(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.SYNC_START)
 
     if (modules.length === 0) {
       return {
@@ -505,7 +515,7 @@ export function syncSingleModule(modules: string[]): SyncResult {
 
     logToChat(
       formatMessage(
-        SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.PROCESSING_MODULES_START,
+        SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.PROCESSING_MODULES_START,
         {
           count: modules.length
         }
@@ -518,7 +528,7 @@ export function syncSingleModule(modules: string[]): SyncResult {
 
     for (const moduleName of modules) {
       logToChat(
-        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SEARCHING_MODULE, {
+        formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.SEARCHING_MODULE, {
           moduleName
         })
       )
@@ -527,7 +537,7 @@ export function syncSingleModule(modules: string[]): SyncResult {
       if (moduleInfo) {
         foundModules.push(moduleInfo)
         logToChat(
-          formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_FOUND, {
+          formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULE_FOUND, {
             moduleName,
             path: moduleInfo.modulePath
           })
@@ -535,9 +545,12 @@ export function syncSingleModule(modules: string[]): SyncResult {
       } else {
         notFoundModules.push(moduleName)
         logToChat(
-          formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_NOT_FOUND, {
-            moduleName
-          })
+          formatMessage(
+            SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULE_NOT_FOUND,
+            {
+              moduleName
+            }
+          )
         )
       }
     }
@@ -572,7 +585,7 @@ export function syncSingleModule(modules: string[]): SyncResult {
     // 4. 同步编译后的文件
     const isSyncSuccess = syncCompiledFiles(
       cachedSingleBuildModules,
-      SYNC_SINGLE_MODULE_DOMAIN_MESSAGES
+      SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES
     )
 
     if (!isSyncSuccess) {
@@ -588,7 +601,7 @@ export function syncSingleModule(modules: string[]): SyncResult {
     }
 
     // 5. 生成最终结果消息
-    let message = SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_SUCCESS
+    let message = SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.SYNC_SUCCESS
     const warnings: string[] = []
 
     if (buildResult.partialSuccess) {
@@ -612,7 +625,7 @@ export function syncSingleModule(modules: string[]): SyncResult {
     }
   } catch (error) {
     logToChat(
-      SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.SYNC_EXCEPTION,
+      SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.SYNC_EXCEPTION,
       error instanceof Error ? error.message : String(error)
     )
     return {
