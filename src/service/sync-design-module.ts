@@ -190,6 +190,9 @@ export function registerSyncDesignModule(server: McpServer): void {
         // 清空日志缓冲区，准备收集新的日志
         clearLogBuffer()
 
+        // 获取需要构建的模块列表
+        getDesignBuildModules()
+
         // 处理模块过滤逻辑
         const userInput = args.userInput || ''
         const isListCmd = isListCommand(userInput)
@@ -199,34 +202,11 @@ export function registerSyncDesignModule(server: McpServer): void {
           console.error(
             'User input ends with "list", listing all design modules'
           )
-          // 获取需要构建的模块列表
-          getDesignBuildModules()
-          // 调用 domain 中的 syncDesignModule 方法
-          const isSuccess = syncDesignModule()
-
-          console.error(
-            isSuccess
-              ? SYNC_DESIGN_MODULE_SERVICE_MESSAGES.TASK_SUCCESS_LOG
-              : SYNC_DESIGN_MODULE_SERVICE_MESSAGES.TASK_FAILED_LOG
-          )
-
-          // 如果执行失败，使用 isError: true 标记，并包含详细的日志信息
-          if (!isSuccess) {
-            const detailedLogs = flushLogBuffer()
-            return createDetailedErrorResponse(
-              SYNC_DESIGN_MODULE_SERVICE_MESSAGES.TASK_FAILED,
-              detailedLogs,
-              ERROR_MESSAGES.TASK_TERMINATION_NOTICE
-            )
-          }
-
           // 列出设计模块
           listDesignModules()
           const detailedLogs = flushLogBuffer()
           return createSuccessResponse(
-            `设计模块同步完成，模块列表已显示${
-              detailedLogs ? `\n${detailedLogs}` : ''
-            }`
+            `设计模块列表已显示${detailedLogs ? `\n${detailedLogs}` : ''}`
           )
         }
 
@@ -235,9 +215,6 @@ export function registerSyncDesignModule(server: McpServer): void {
         if (filterResult) {
           return filterResult
         }
-
-        // 获取需要构建的模块列表
-        getDesignBuildModules()
 
         // 应用模块过滤器
         const applyResult = applyModuleFilter()
