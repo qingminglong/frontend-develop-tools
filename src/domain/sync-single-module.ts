@@ -70,6 +70,34 @@ function extractModuleName(userInput: string): string | null {
 }
 
 /**
+ * 处理模块名称提取结果
+ * @param moduleName - 提取的模块名称
+ * @param userInput - 用户输入字符串
+ * @returns 提取成功的模块名称，如果提取失败则返回 null
+ */
+function extractionModuleLogToChat(
+  moduleName: string | null,
+  userInput: string
+): void {
+  if (!moduleName) {
+    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.EXTRACT_MODULE_FAILED)
+    logToChat(
+      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.USER_INPUT, {
+        input: userInput
+      })
+    )
+    logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.EXTRACTION_HINT)
+    return
+  }
+
+  logToChat(
+    formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.EXTRACT_MODULE_SUCCESS, {
+      moduleName
+    })
+  )
+}
+
+/**
  * 从package.json中读取name属性
  * @param packageJsonPath - package.json文件路径
  * @returns package.json的name属性
@@ -367,31 +395,17 @@ export function syncSingleModule(userInput: string): boolean {
 
     // 1. 从用户输入中提取模块名
     const moduleName = extractModuleName(userInput)
-
+    extractionModuleLogToChat(moduleName, userInput)
     if (!moduleName) {
-      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.EXTRACT_MODULE_FAILED)
-      logToChat(
-        formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.USER_INPUT, {
-          input: userInput
-        })
-      )
-      logToChat(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.EXTRACTION_HINT)
       return false
     }
-
-    logToChat(
-      formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.EXTRACT_MODULE_SUCCESS, {
-        moduleName
-      })
-    )
-
     // 2. 在配置中查找模块
     const moduleInfo = findModuleInConfiguration(moduleName)
 
     if (!moduleInfo) {
       logToChat(
         formatMessage(SYNC_SINGLE_MODULE_DOMAIN_MESSAGES.MODULE_NOT_FOUND, {
-          moduleName
+          moduleName: moduleName
         })
       )
       return false

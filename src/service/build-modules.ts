@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { buildModules } from '../domain/build-modules.ts'
+import { buildModules, getAllBuildedModules } from '../domain/build-modules.ts'
 import {
   clearLogBuffer,
   flushLogBuffer,
@@ -58,6 +58,8 @@ export function registerBuildModules(server: McpServer): void {
         // 清空日志缓冲区，准备收集新的日志
         clearLogBuffer()
 
+        // 获取所有已构建的模块
+        getAllBuildedModules()
         const result = buildModules()
 
         console.error(
