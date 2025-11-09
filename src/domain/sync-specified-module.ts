@@ -14,7 +14,10 @@ import fs from 'fs'
 import path from 'path'
 import type { ModuleInfo } from '../types/detect-changed-module.ts'
 import type { BuildedModule } from '../types/build-modules.ts'
-import { getWorkspacePackages } from './detect-changed-module.ts'
+import {
+  getWorkspacePackages,
+  getModulesInfosDetail
+} from './detect-changed-module.ts'
 /**
  * 同步结果类型
  */
@@ -110,6 +113,45 @@ export function listAllModules(): void {
 
     // 在不同路径之间添加空行（除了最后一个路径）
     if (index < paths.length - 1) {
+      logToChat('')
+    }
+  })
+}
+
+/**
+ * 列出变更的模块
+ * 从 getModulesInfosDetail() 获取并显示所有变更的模块
+ */
+export function listModifedModules(): void {
+  const modulesDetail = getModulesInfosDetail()
+
+  const allPaths = Object.keys(modulesDetail)
+  if (allPaths.length === 0) {
+    logToChat(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.NO_MODULES_FOUND)
+    return
+  }
+
+  logToChat(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.LIST_MODULES_TITLE)
+
+  // 按项目路径显示变更模块
+  allPaths.forEach((projectPath, index) => {
+    const modules = modulesDetail[projectPath]
+
+    logToChat(
+      formatMessage(SYNC_SPECIFIED_MODULE_DOMAIN_MESSAGES.MODULE_PATH_HEADER, {
+        path: projectPath
+      })
+    )
+
+    // 在第一个模块名前添加换行
+    logToChat('')
+
+    modules.forEach((module) => {
+      logToChat(module.moduleName)
+    })
+
+    // 在不同路径之间添加空行（除了最后一个路径）
+    if (index < allPaths.length - 1) {
       logToChat('')
     }
   })
